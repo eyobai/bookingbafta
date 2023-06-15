@@ -152,8 +152,8 @@ const handleAddService=()=>{
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.loginBtn} onPress={handleAddService}>
-        <Text style={styles.loginText}>LOGIN</Text>
+      <TouchableOpacity style={styles.nextBtn} onPress={handleAddService}>
+        <Text style={styles.nextText}>Next</Text>
       </TouchableOpacity>
     </View>
   );
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 4,
   },
-  loginBtn: {
+  nextBtn: {
     width: "100%",
     backgroundColor: "#069BA4",
     borderRadius: 25,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  loginText: {
+  nextText: {
     color: "white",
     fontSize: 16,
     fontWeight: "bold",

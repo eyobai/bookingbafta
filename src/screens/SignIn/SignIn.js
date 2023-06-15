@@ -43,7 +43,7 @@ const SignIn = () => {
     });
   };
   const notRegisterd = () => {
-    navigation.navigate("Services");
+    navigation.navigate("BusinessCategory");
   };
 
   return (

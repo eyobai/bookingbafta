@@ -5,5 +5,5 @@ export const firebaseConfig = {
   storageBucket: "gizeye-20fa5.appspot.com",
   messagingSenderId: "29032338202",
   appId: "1:29032338202:web:bc79107d3a2b8965ac12a3",
-  measurementId: "G-CJRE4ZYMWV",
+  measurementId: "G-CJRE4ZYMWV"
 };

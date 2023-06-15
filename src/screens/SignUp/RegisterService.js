@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Animated,
 } from "react-native";
 import { collection, addDoc } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
@@ -30,44 +29,46 @@ const Services = ({ route }) => {
     duration: "",
     priceCategory: "",
   });
-  const removalAnimations = useRef([]);
 
-  const handleAddService = async () => {
-    const db = getFirestore();
-    const { userId } = route.params;
+  useEffect(() => {
+    // Simulate adding a new service on app start
+    const initialService = {
+      name: "",
+      duration: "",
+      priceCategory: "",
+    };
+    setServices([initialService]);
+  }, []);
+const handleAddService=()=>{
+  console.log(services);
+}
+  // const handleAddService = async () => {
+  //   const db = getFirestore();
+  //   const { userId } = route.params;
 
-    try {
-      const serviceToAdd = { ...newService, userId };
-      const docRef = await addDoc(collection(db, "services"), serviceToAdd);
+  //   try {
+  //     const serviceToAdd = { ...newService, userId };
+  //     const docRef = await addDoc(collection(db, "services"), serviceToAdd);
 
-      console.log("Service added with ID: ", docRef.id);
+  //     console.log("Service added with ID: ", docRef.id);
 
-      setServices([...services, serviceToAdd]);
-      console.log(services);
-      setNewService({
-        name: "",
-        duration: "",
-        priceCategory: "",
-      });
-    } catch (error) {
-      console.error("Error adding service: ", error);
-    }
-  };
+  //     setServices([...services, serviceToAdd]);
+  //     console.log(services);
+  //     setNewService({
+  //       name: "",
+  //       duration: "",
+  //       priceCategory: "",
+  //     });
+  //   } catch (error) {
+  //     console.error("Error adding service: ", error);
+  //   }
+  // };
 
   const handleRemoveService = (index) => {
-    const animatedValue = removalAnimations.current[index];
-
-    Animated.timing(animatedValue, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setServices((prevServices) => {
-        const updatedServices = [...prevServices];
-        updatedServices.splice(index, 1);
-        return updatedServices;
-      });
-      removalAnimations.current.splice(index, 1);
+    setServices((prevServices) => {
+      const updatedServices = [...prevServices];
+      updatedServices.splice(index, 1);
+      return updatedServices;
     });
   };
 
@@ -91,12 +92,6 @@ const Services = ({ route }) => {
     });
   };
 
-  const handleLayout = (index) => {
-    if (!removalAnimations.current[index]) {
-      removalAnimations.current[index] = new Animated.Value(1);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Services</Text>
@@ -104,14 +99,7 @@ const Services = ({ route }) => {
       <View style={styles.contentContainer}>
         <ScrollView style={styles.scrollView}>
           {services.map((service, index) => (
-            <Animated.View
-              key={index}
-              style={[
-                styles.fieldContainer,
-                { opacity: removalAnimations.current[index] },
-              ]}
-              onLayout={() => handleLayout(index)}
-            >
+            <View key={index} style={styles.fieldContainer}>
               <TextInput
                 style={styles.input}
                 placeholder="Service"
@@ -152,7 +140,7 @@ const Services = ({ route }) => {
               >
                 <MaterialIcons name="remove-circle" size={24} color="red" />
               </TouchableOpacity>
-            </Animated.View>
+            </View>
           ))}
         </ScrollView>
 

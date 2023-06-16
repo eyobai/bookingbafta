@@ -64,6 +64,7 @@ const RegisterScreen = () => {
         setDoc(userDocRef, { email, phone, businessName, name })
           .then(() => {
             console.log("User registered and email saved in Firestore:", user);
+        
           })
           .catch((error) => {
             console.error("Error saving email in Firestore:", error);
@@ -71,7 +72,8 @@ const RegisterScreen = () => {
           .finally(() => {
             setLoading(false);
           });
-        navigation.navigate("Services", { userId });
+          navigation.navigate("BusinessCategory", { userId: user.uid });
+
       })
       .catch((error) => {
         console.error("Error registering user:", error);

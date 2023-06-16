@@ -39,30 +39,28 @@ const Services = ({ route }) => {
     };
     setServices([initialService]);
   }, []);
-const handleAddService=()=>{
-  console.log(services);
-}
-  // const handleAddService = async () => {
-  //   const db = getFirestore();
-  //   const { userId } = route.params;
 
-  //   try {
-  //     const serviceToAdd = { ...newService, userId };
-  //     const docRef = await addDoc(collection(db, "services"), serviceToAdd);
+  const handleAddService = async () => {
+    const db = getFirestore();
+    const { userId } = route.params;
 
-  //     console.log("Service added with ID: ", docRef.id);
+    try {
+      const serviceToAdd = { ...newService, userId };
+      const docRef = await addDoc(collection(db, "services"), serviceToAdd);
 
-  //     setServices([...services, serviceToAdd]);
-  //     console.log(services);
-  //     setNewService({
-  //       name: "",
-  //       duration: "",
-  //       priceCategory: "",
-  //     });
-  //   } catch (error) {
-  //     console.error("Error adding service: ", error);
-  //   }
-  // };
+      console.log("Service added with ID: ", docRef.id);
+
+      setServices([...services, serviceToAdd]);
+      console.log(services);
+      setNewService({
+        name: "",
+        duration: "",
+        priceCategory: "",
+      });
+    } catch (error) {
+      console.error("Error adding service: ", error);
+    }
+  };
 
   const handleRemoveService = (index) => {
     setServices((prevServices) => {

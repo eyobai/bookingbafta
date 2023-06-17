@@ -19,20 +19,20 @@ const slides = [
   {
     id: "1",
     image: require("../../assets/bafta_logo.png"),
-    title: "Best Digital Solution",
-    subtitle: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    title: "Welcome to Bafta!",
+    subtitle: "Connect with clients and grow your business.",
   },
   {
     id: "2",
     image: require("../../assets/bafta_logo.png"),
-    title: "Achieve Your Goals",
-    subtitle: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    title: "Expand Your Reach",
+    subtitle: "Reach a larger audience and increase your visibility.",
   },
   {
     id: "3",
     image: require("../../assets/bafta_logo.png"),
-    title: "Increase Your Value",
-    subtitle: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    title: "Manage Bookings Easily",
+    subtitle: "Effortlessly handle appointments and schedules.",
   },
 ];
 

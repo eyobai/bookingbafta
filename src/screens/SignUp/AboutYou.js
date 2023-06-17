@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
+import useInternetConnectivity from "../../components/useInternetConnectivity";
 
 import {
   View,
@@ -11,15 +12,27 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
 import { firebaseConfig } from "../../firebase.config";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, setDoc, doc, set } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  setDoc,
+  doc,
+  set,
+} from "firebase/firestore";
 import BusinessCategory from "./BusinessCategory";
+
 const RegisterScreen = () => {
   const navigation = useNavigation();
+  const { showBanner } = useInternetConnectivity();
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -29,31 +42,37 @@ const RegisterScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [userId, setUserId] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const app = initializeApp(firebaseConfig);
-
   const firestore = getFirestore();
 
   const handleRegister = async () => {
-    setLoading(true);
+    
+
     const auth = getAuth();
     const db = getFirestore(app);
+    
     if (!email || !password || !confirmPassword) {
       setErrorMessage("Please fill in all fields.");
+      setIsLoading(false); // Set loading state to false
       return;
     }
+  
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match.");
+      setIsLoading(false); // Set loading state to false
       return;
     }
     const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
     // Check if the email matches the regular expression
     if (!emailRegex.test(email)) {
-      setErrorMessage("email is not correct");
+      setErrorMessage("Email is not correct");
+      setIsLoading(false); // Set loading state to false
       return;
     }
+    setIsLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         // User registration successful
@@ -63,34 +82,43 @@ const RegisterScreen = () => {
         // Save the user's email in Firestore
         setDoc(userDocRef, { email, phone, businessName, name })
           .then(() => {
-            console.log("User registered and email saved in Firestore:", user);
-        
+            console.log(
+              "User registered and email saved in Firestore:",
+              user
+            );
           })
           .catch((error) => {
             console.error("Error saving email in Firestore:", error);
           })
           .finally(() => {
-            setLoading(false);
+            setIsLoading(false);
           });
-          navigation.navigate("BusinessCategory", { userId: user.uid });
-
+        navigation.navigate("BusinessCategory", { userId: user.uid });
       })
       .catch((error) => {
         console.error("Error registering user:", error);
-        setLoading(false);
+        setIsLoading(false);
       });
   };
+
   const AlreadyRegistered = () => {
-    //send user id to business category
+    navigation.navigate("SignIn");
   };
+
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../../assets/bafta_logo.png")}
-        style={styles.logo}
-      />
-      <Text style={styles.title}>Create an account</Text>
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+   
+
+      <View style={styles.logoContainer}>
+        <Image
+          source={require("../../assets/bafta_logo.png")}
+          style={styles.logo}
+        />
+        <Text style={styles.title}>Create an account</Text>
+      </View>
+      {errorMessage ? (
+        <Text style={styles.error}>{errorMessage}</Text>
+      ) : null}
       <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center" }}>
         <TextInput
           style={styles.input}
@@ -134,10 +162,18 @@ const RegisterScreen = () => {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
         />
-
-        <TouchableOpacity style={styles.RegisterBtn} onPress={handleRegister}>
+ <TouchableOpacity
+        style={styles.RegisterBtn}
+        onPress={handleRegister}
+        disabled={isLoading} // Disable the button when loading is true
+      >
+        {/* Show different text based on the loading state */}
+        {isLoading ? (
+          <ActivityIndicator color="white" size="small" />
+        ) : (
           <Text style={styles.RegisterText}>NEXT</Text>
-        </TouchableOpacity>
+        )}
+      </TouchableOpacity>
         <Text style={styles.alreadyRegisteredText}>
           already have account?
           <TouchableOpacity onPress={AlreadyRegistered}>
@@ -145,6 +181,13 @@ const RegisterScreen = () => {
           </TouchableOpacity>
         </Text>
       </ScrollView>
+      {showBanner && (
+      <View style={isConnected ? styles.restoredBanner : styles.disconnectedBanner}>
+        <Text style={styles.bannerText}>
+          {isConnected ? "Internet Restored" : "Not Connected to the Internet"}
+        </Text>
+      </View>
+    )}
     </View>
   );
 };
@@ -152,19 +195,32 @@ const RegisterScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 40,
+    paddingTop: 0,
     paddingHorizontal: 20,
+    justifyContent: "center",
+  },
+  bannerContainer: {
+    backgroundColor: "green",
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  bannerText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 40,
   },
   logo: {
     width: 200,
-    height: 100,
+    height: 200,
     alignSelf: "center",
-    marginBottom: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 24,
+    marginTop: -50,
     alignSelf: "center",
   },
   input: {
@@ -182,8 +238,8 @@ const styles = StyleSheet.create({
   },
   alreadyRegisteredText: {
     color: "black",
-    marginTop: 24,
-    fontSize: 16,
+    marginTop: 4,
+    fontSize: 19,
   },
   noteRegisteredLink: {
     color: "#003f5c",

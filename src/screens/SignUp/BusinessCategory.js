@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet,ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig } from '../../firebase.config';
+import { getFirestore, collection, addDoc, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Updated import for AsyncStorage
+import { firebaseConfig } from '../../firebase.config';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -15,7 +22,6 @@ const OptionsList = () => {
   const route = useRoute();
   const userId = useSelector((state) => state.userId);
 
-
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,18 +29,19 @@ const OptionsList = () => {
     fetchSelectedOptions();
   }, []);
 
+  // Function to fetch selected options from AsyncStorage
   const fetchSelectedOptions = async () => {
     try {
       if (!userId) {
         console.error('User ID is missing.');
         return;
       }
-      console.log("userId:", userId);
-      const optionsRef = collection(db, `users/${userId}/options`);
-      const optionsSnapshot = await getDocs(query(optionsRef, orderBy('timestamp', 'desc'), limit(1)));
+      console.log('userId:', userId);
+      const optionsKey = `users/${userId}/options`;
+      const optionsData = await AsyncStorage.getItem(optionsKey);
 
-      if (!optionsSnapshot.empty) {
-        const latestOptions = optionsSnapshot.docs[0].data().selectedOptions;
+      if (optionsData) {
+        const latestOptions = JSON.parse(optionsData).selectedOptions;
         setSelectedOptions(latestOptions);
       }
     } catch (error) {
@@ -42,6 +49,7 @@ const OptionsList = () => {
     }
   };
 
+  // Function to handle option press and update selected options
   const handleOptionPress = (option) => {
     const updatedOptions = selectedOptions.includes(option)
       ? selectedOptions.filter((item) => item !== option)
@@ -50,18 +58,23 @@ const OptionsList = () => {
     setSelectedOptions(updatedOptions);
   };
 
+  // Function to save options to AsyncStorage
   const handleSaveOptions = async () => {
     setIsLoading(true);
 
     try {
-      const optionsRef = collection(db, `users/${userId}/options`);
+      if (!userId) {
+        console.error('User ID is missing.');
+        return;
+      }
+      const optionsKey = `users/${userId}/options`;
       const newOptions = {
         selectedOptions,
         timestamp: Date.now(),
       };
-      await addDoc(optionsRef, newOptions);
+      await AsyncStorage.setItem(optionsKey, JSON.stringify(newOptions));
       console.log('Options saved successfully!');
-      navigation.navigate("Services");
+      navigation.navigate('Services');
     } catch (error) {
       console.error('Error saving options:', error);
     }

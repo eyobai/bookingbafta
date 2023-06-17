@@ -16,6 +16,7 @@ import AboutYou from "../screens/SignUp/AboutYou";
 import BusinessCategory from "../screens/SignUp/BusinessCategory";
 import Services from "../screens/SignUp/RegisterService";
 import DayList from "../screens/DayList/DayList";
+import UploadImage from "../screens/ImageUpload/ImageUpload";
 // Create a stack navigator
 
 const Stack = createNativeStackNavigator();
@@ -74,7 +75,7 @@ const MainTab = () => {
 const MainStack = () => {
   return (
     <Stack.Navigator
-      initialRouteName="Preload"
+      initialRouteName="ImageUpload"
       screenOptions={{ headerShown: false }}
     >
       <Stack.Screen
@@ -87,7 +88,7 @@ const MainStack = () => {
       <Stack.Screen name="BusinessCategory" component={BusinessCategory} />
       <Stack.Screen name="Services" component={Services} />
       <Stack.Screen name="DayList" component={DayList} />
-
+      <Stack.Screen name="ImageUpload" component={UploadImage}/>
       <Stack.Screen name="Main" component={MainTab} />
     </Stack.Navigator>
   );

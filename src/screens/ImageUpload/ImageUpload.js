@@ -34,13 +34,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  sidebar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 50,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sidebarTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
 });
 
 export default function App() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [imageSelected, setImageSelected] = useState(false);
+  const [isImageSelected, setIsImageSelected] = useState(false);
 
   const handleImageSelection = async () => {
     try {
@@ -62,7 +76,7 @@ export default function App() {
       if (!result.cancelled && result.assets.length > 0) {
         const { uri } = result.assets[0];
         setSelectedImage(uri);
-        setImageSelected(true);
+        setIsImageSelected(true);
       } else {
         console.log('Image selection cancelled.');
       }
@@ -91,7 +105,7 @@ export default function App() {
       if (!result.cancelled && result.assets.length > 0) {
         const { uri } = result.assets[0];
         setSelectedImage(uri);
-        setImageSelected(true);
+        setIsImageSelected(true);
       } else {
         console.log('Image capture cancelled.');
       }
@@ -106,28 +120,28 @@ export default function App() {
         const filename = selectedImage.substring(selectedImage.lastIndexOf('/') + 1);
         const response = await fetch(selectedImage);
         const blob = await response.blob();
-
+  
         const storageRef = ref(storage, `images/${filename}`);
         const uploadTask = uploadBytesResumable(storageRef, blob);
-
+  
         uploadTask.on('state_changed', (snapshot) => {
           const progressPercentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           setProgress(progressPercentage);
         });
-
+  
         setUploading(true);
-
+  
         await uploadTask;
-
+  
         const downloadURL = await getDownloadURL(storageRef);
-
+  
         console.log('Image uploaded successfully:', downloadURL);
       } catch (error) {
         console.error('Error uploading image:', error);
       } finally {
         setUploading(false);
         setProgress(0);
-        setImageSelected(false);
+        setIsImageSelected(false);
         setSelectedImage(null);
       }
     } else {
@@ -137,23 +151,38 @@ export default function App() {
 
   return (
 <View style={styles.flexContainer}>
-      <Button title="Select from Library" onPress={handleImageSelection} />
-      <Button title="Take a Photo" onPress={handleCameraCapture} />
-      {imageSelected && selectedImage ? (
-        <View style={styles.container}>
-          <Image source={{ uri: selectedImage }} style={styles.image} />
-        </View>
-      ) : (
-        <View style={styles.container}>
-          <Text style={styles.text}>Add workplace photo</Text>
-        </View>
-      )}
-      {uploading && (
-        <View>
-          <ActivityIndicator size="small" color="#0000ff" />
-          <Text>Uploading: {progress.toFixed(2)}%</Text>
-        </View>
-      )}
+      <View style={styles.sidebar}>
+        <Text style={styles.sidebarTitle}>Page Title</Text>
+      </View>
+
+      <View>
+        <Button title="Select from Library" onPress={handleImageSelection} />
+        <Button title="Take a Photo" onPress={handleCameraCapture} />
+
+        {isImageSelected && selectedImage ? (
+          <View style={styles.container}>
+            <Image source={{ uri: selectedImage }} style={styles.image} />
+          </View>
+        ) : (
+          <View style={styles.container}>
+            <Text style={styles.text}>Add workplace photo</Text>
+          </View>
+        )}
+
+        {uploading && (
+          <View>
+            <ActivityIndicator size="small" color="#0000ff" />
+          </View>
+        )}
+
+        {isImageSelected && (
+          <Button
+            title={uploading ? `Uploading: ${progress.toFixed(2)}%` : 'Upload'}
+            onPress={handleUploadButtonPress}
+            disabled={uploading}
+          />
+        )}
+      </View>
     </View>
   );
 }

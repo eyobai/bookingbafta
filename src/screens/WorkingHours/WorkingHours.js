@@ -1,42 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Button } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useSelector } from 'react-redux';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../../firebase.config';
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const WorkingHoursPage = () => {
   const [workingHours, setWorkingHours] = useState({
-    Monday: { start: '02:00 AM', end: '02:00 PM', isClosed: false },
-    Tuesday: { start: '02:00 AM', end: '02:00 PM', isClosed: false },
-    Wednesday: { start: '02:00 AM', end: '02:00 PM', isClosed: false },
-    Thursday: { start: '02:00 AM', end: '02:00 PM', isClosed: false },
-    Friday: { start: '02:00 AM', end: '02:00 PM', isClosed: false },
-    Saturday: { start: '02:00 AM', end: '02:00 PM', isClosed: false },
-    Sunday: { start: '02:00 AM', end: '02:00 PM', isClosed: false },
+    Monday: { start: '', end: '', isEnabled: true },
+    Tuesday: { start: '', end: '', isEnabled: true },
+    Wednesday: { start: '', end: '', isEnabled: true },
+    Thursday: { start: '', end: '', isEnabled: true },
+    Friday: { start: '', end: '', isEnabled: true },
+    Saturday: { start: '', end: '', isEnabled: true },
+    Sunday: { start: '', end: '', isEnabled: true },
   });
 
   const [selectedDay, setSelectedDay] = useState('');
-  const [showPickerModal, setShowPickerModal] = useState(false);
+  const [pickerModal, setPickerModal] = useState(false);
   const [isSettingStartTime, setIsSettingStartTime] = useState(true);
   const [isAllSet, setIsAllSet] = useState(false);
 
+  const userId = useSelector((state) => state.userId);
+  
   useEffect(() => {
     // Check if all start and end times are set
     const allSet = Object.values(workingHours).every(
-      (day) => day.start !== '' && day.end !== ''
+      (day) => day.isEnabled && day.start !== '' && day.end !== ''
     );
     setIsAllSet(allSet);
   }, [workingHours]);
 
   const handleSelectHours = (day, settingStartTime) => {
-    if (!workingHours[day].isClosed) {
-      setSelectedDay(day);
-      setIsSettingStartTime(settingStartTime);
-      setShowPickerModal(true);
-    }
+    setSelectedDay(day);
+    setIsSettingStartTime(settingStartTime);
+    setPickerModal(true);
   };
 
   const handleToggleClosed = (day) => {
@@ -44,16 +46,14 @@ const WorkingHoursPage = () => {
       ...workingHours,
       [day]: {
         ...workingHours[day],
-        isClosed: !workingHours[day].isClosed,
-        start: workingHours[day].isClosed ? '02:00 AM' : '',
-        end: workingHours[day].isClosed ? '02:00 PM' : '',
+        isEnabled: !workingHours[day].isEnabled,
       },
     };
 
     setWorkingHours(updatedWorkingHours);
   };
 
-  const handleStartPickerConfirm = (selectedTime) => {
+  const handlePickerConfirm = (selectedTime) => {
     if (selectedTime) {
       const timeString = selectedTime.toLocaleTimeString([], {
         hour: '2-digit',
@@ -64,73 +64,33 @@ const WorkingHoursPage = () => {
         ...workingHours,
         [selectedDay]: {
           ...workingHours[selectedDay],
-          start: workingHours[selectedDay].isClosed ? 'Closed' : timeString,
+          start: isSettingStartTime
+            ? workingHours[selectedDay].isEnabled
+              ? timeString
+              : ''
+            : workingHours[selectedDay].start,
+          end: isSettingStartTime
+            ? workingHours[selectedDay].end
+            : workingHours[selectedDay].isEnabled
+            ? timeString
+            : '',
         },
       };
-
-      // Validate end time
-      const endTime = workingHours[selectedDay].end;
-      if (
-        endTime &&
-        new Date(`1970-01-01T${timeString}`) > new Date(`1970-01-01T${endTime}`)
-      ) {
-        // Display error message or handle the invalid selection as per your requirement
-        console.log('Invalid time selection');
-        return;
-      }
 
       setWorkingHours(updatedWorkingHours);
     }
 
-    setShowPickerModal(false);
-  };
-
-  const handleEndPickerConfirm = (selectedTime) => {
-    if (selectedTime) {
-      const timeString = selectedTime.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-
-      const updatedWorkingHours = {
-        ...workingHours,
-        [selectedDay]: {
-          ...workingHours[selectedDay],
-          end: workingHours[selectedDay].isClosed ? 'Closed' : timeString,
-        },
-      };
-
-      // Validate start time
-      const startTime = workingHours[selectedDay].start;
-      if (
-        startTime &&
-        new Date(`1970-01-01T${timeString}`) < new Date(`1970-01-01T${startTime}`)
-      ) {
-        // Display error message or handle the invalid selection as per your requirement
-        console.log('Invalid time selection');
-        return;
-      }
-
-      setWorkingHours(updatedWorkingHours);
-    }
-
-    setShowPickerModal(false);
+    setPickerModal(false);
   };
 
   const handleNext = async () => {
-    if (!isAllSet) {
-      // Display error message or handle the incomplete selection as per your requirement
-      console.log('All start and end times must be set');
-      return;
-    }
-
     try {
       // Generate a unique ID for the service provider
       const providerId = generateUniqueId();
 
-      // Save the working hours in Firestore with the provider ID
-      await addDoc(collection(db, 'workingHours'), {
-        providerId,
+      // Save the working hours and on/off status in Firestore with the provider ID
+      await setDoc(doc(db, 'workingHours', providerId), {
+        userId,
         workingHours,
       });
 
@@ -144,59 +104,60 @@ const WorkingHoursPage = () => {
 
   const generateUniqueId = () => {
     // Generate a unique ID for the service provider using a suitable algorithm
-    // You can use libraries like `uuid` or generate a custom ID based on your requirements
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
+    // You can use libraries like `uuid` or generate a custom ID based on requirements
+    // Here's a simple example using the current timestamp:
+    return new Date().getTime().toString();
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Select Working Hours</Text>
-      {Object.keys(workingHours).map((day) => (
-        <TouchableOpacity
-          key={day}
-          style={styles.dayContainer}
-          onPress={() => handleSelectHours(day, true)}
-        >
-          <View style={styles.dayAndTimeContainer}>
-            <Text style={styles.day}>{day}</Text>
+      <Text style={styles.title}>Set Working Hours</Text>
+      {Object.entries(workingHours).map(([day, data]) => (
+        <View key={day} style={styles.dayContainer}>
+          <Text style={styles.dayText}>{day}</Text>
+          <View style={styles.switchContainer}>
+            <TouchableOpacity
+              style={[styles.switch, data.isEnabled ? styles.switchOn : styles.switchOff]}
+              onPress={() => handleToggleClosed(day)}
+            >
+              <Text style={styles.switchText}>{data.isEnabled ? 'On' : 'Off'}</Text>
+            </TouchableOpacity>
+          </View>
+          {data.isEnabled && (
             <View style={styles.timeContainer}>
-              <TouchableOpacity onPress={() => handleSelectHours(day, true)}>
-                <Text style={styles.time}>
-                  {workingHours[day].isClosed ? 'Closed' : workingHours[day].start || 'Start'}
-                </Text>
+              <TouchableOpacity
+                style={[
+                  styles.timeButton,
+                  data.start === '' && data.end === '' ? styles.timeButtonInactive : null,
+                ]}
+                onPress={() => handleSelectHours(day, true)}
+              >
+                <Text style={styles.timeButtonText}>{data.start || 'Start'}</Text>
               </TouchableOpacity>
-              <Text style={styles.timeSeparator}> - </Text>
-              <TouchableOpacity onPress={() => handleSelectHours(day, false)}>
-                <Text style={styles.time}>
-                  {workingHours[day].isClosed ? 'Closed' : workingHours[day].end || 'End'}
-                </Text>
+              <Text style={styles.timeSeparator}>-</Text>
+              <TouchableOpacity
+                style={[
+                  styles.timeButton,
+                  data.start === '' && data.end === '' ? styles.timeButtonInactive : null,
+                ]}
+                onPress={() => handleSelectHours(day, false)}
+              >
+                <Text style={styles.timeButtonText}>{data.end || 'End'}</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </TouchableOpacity>
-      ))}
-      {isAllSet && <Text>All start and end times are set.</Text>}
-      {showPickerModal && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeaderText}>
-              Setting {isSettingStartTime ? 'Start' : 'End'} Time for {selectedDay}
-            </Text>
-            <DateTimePickerModal
-              isVisible={true}
-              mode="time"
-              onConfirm={isSettingStartTime ? handleStartPickerConfirm : handleEndPickerConfirm}
-              onCancel={() => setShowPickerModal(false)}
-              pickerType="clock"
-            />
-          </View>
+          )}
         </View>
-      )}
-      <Button title="Next" onPress={handleNext} />
+      ))}
+      <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
+        <Text style={styles.nextText}>Next</Text>
+      </TouchableOpacity>
+      <DateTimePickerModal
+        isVisible={pickerModal}
+        mode="time"
+        onConfirm={handlePickerConfirm}
+        onCancel={() => setPickerModal(false)}
+        pickerMode="spinner"
+      />
     </View>
   );
 };
@@ -205,67 +166,83 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
-  heading: {
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
   },
   dayContainer: {
-    borderWidth: 1,
-    borderColor: '#069BA4',
-    borderRadius: 8,
-    marginBottom: 10,
-    padding: 20,
-  },
-  dayAndTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingVertical: 20, // Added vertical padding
+    paddingHorizontal: 20, // Added horizontal padding
+    borderWidth: 1, // Added border width
+    borderColor: '#ccc', // Added border color
+    borderRadius: 8, // Added border radius
   },
-  day: {
+  dayText: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#069BA4',
+  },
+  switchContainer: {
+    marginRight: 10,
+  },
+  switch: {
+    width: 50,
+    height: 25,
+    borderRadius: 12.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  switchOn: {
+    backgroundColor: '#4CAF50',
+  },
+  switchOff: {
+    backgroundColor: '#FF5722',
+  },
+  switchText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   timeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 10,
   },
-  time: {
-    fontSize: 18,
-    color: '#333',
+  timeButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+    backgroundColor: '#2196F3',
+    marginRight: 10,
+  },
+  timeButtonInactive: {
+    backgroundColor: '#9E9E9E',
+  },
+  timeButtonText: {
+    color: 'white',
   },
   timeSeparator: {
-    fontSize: 18,
-    color: '#333',
     marginHorizontal: 5,
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  nextBtn: {
+    marginTop: 20,
+    alignSelf: 'center',
+    backgroundColor: '#2196F3',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
   },
-
-  modalContent: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    borderRadius: 8,
-    elevation: 5,
-    shadowColor: '#000000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-  },
-
-  modalHeaderText: {
-    fontSize: 20,
+  nextText: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#069BA4',
   },
 });
 

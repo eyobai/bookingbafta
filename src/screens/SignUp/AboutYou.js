@@ -1,7 +1,7 @@
 import React, { useState } from "react";
+import { connect } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import useInternetConnectivity from "../../components/useInternetConnectivity";
-
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -28,9 +27,9 @@ import {
   doc,
   set,
 } from "firebase/firestore";
-import BusinessCategory from "./BusinessCategory";
+import { setUserId } from "../../redux/action";
 
-const RegisterScreen = () => {
+const RegisterScreen = ({ setUserId }) => {
   const navigation = useNavigation();
   const { showBanner } = useInternetConnectivity();
 
@@ -41,29 +40,27 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [userId, setUserId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const app = initializeApp(firebaseConfig);
   const firestore = getFirestore();
 
   const handleRegister = async () => {
-    
-
     const auth = getAuth();
     const db = getFirestore(app);
-    
+
     if (!email || !password || !confirmPassword) {
       setErrorMessage("Please fill in all fields.");
       setIsLoading(false); // Set loading state to false
       return;
     }
-  
+
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match.");
       setIsLoading(false); // Set loading state to false
       return;
     }
+
     const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
     // Check if the email matches the regular expression
@@ -72,20 +69,19 @@ const RegisterScreen = () => {
       setIsLoading(false); // Set loading state to false
       return;
     }
+
     setIsLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         // User registration successful
         const user = userCredential.user;
         const userDocRef = doc(db, "users", user.uid);
-        setUserId(user.uid);
+        setUserId(user.uid); // Dispatch the action to update the userId in Redux store
+
         // Save the user's email in Firestore
         setDoc(userDocRef, { email, phone, businessName, name })
           .then(() => {
-            console.log(
-              "User registered and email saved in Firestore:",
-              user
-            );
+            console.log("User registered and email saved in Firestore:", user);
           })
           .catch((error) => {
             console.error("Error saving email in Firestore:", error);
@@ -93,7 +89,8 @@ const RegisterScreen = () => {
           .finally(() => {
             setIsLoading(false);
           });
-        navigation.navigate("BusinessCategory", { userId: user.uid });
+
+        navigation.navigate("WorkingHour");
       })
       .catch((error) => {
         console.error("Error registering user:", error);
@@ -107,8 +104,6 @@ const RegisterScreen = () => {
 
   return (
     <View style={styles.container}>
-   
-
       <View style={styles.logoContainer}>
         <Image
           source={require("../../assets/bafta_logo.png")}
@@ -116,9 +111,7 @@ const RegisterScreen = () => {
         />
         <Text style={styles.title}>Create an account</Text>
       </View>
-      {errorMessage ? (
-        <Text style={styles.error}>{errorMessage}</Text>
-      ) : null}
+      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center" }}>
         <TextInput
           style={styles.input}
@@ -162,32 +155,32 @@ const RegisterScreen = () => {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
         />
- <TouchableOpacity
-        style={styles.RegisterBtn}
-        onPress={handleRegister}
-        disabled={isLoading} // Disable the button when loading is true
-      >
-        {/* Show different text based on the loading state */}
-        {isLoading ? (
-          <ActivityIndicator color="white" size="small" />
-        ) : (
-          <Text style={styles.RegisterText}>NEXT</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.RegisterBtn}
+          onPress={handleRegister}
+          disabled={isLoading} // Disable the button when loading is true
+        >
+          {/* Show different text based on the loading state */}
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={styles.RegisterText}>NEXT</Text>
+          )}
+        </TouchableOpacity>
         <Text style={styles.alreadyRegisteredText}>
-          already have account?
+          already have an account?
           <TouchableOpacity onPress={AlreadyRegistered}>
             <Text style={styles.noteRegisteredLink}> Login</Text>
           </TouchableOpacity>
         </Text>
       </ScrollView>
       {showBanner && (
-      <View style={isConnected ? styles.restoredBanner : styles.disconnectedBanner}>
-        <Text style={styles.bannerText}>
-          {isConnected ? "Internet Restored" : "Not Connected to the Internet"}
-        </Text>
-      </View>
-    )}
+        <View style={isConnected ? styles.restoredBanner : styles.disconnectedBanner}>
+          <Text style={styles.bannerText}>
+            {isConnected ? "Internet Restored" : "Not Connected to the Internet"}
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -263,4 +256,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen;
+const mapDispatchToProps = (dispatch) => {
+  return {
+    setUserId: (userId) => dispatch(setUserId(userId)),
+  };
+};
+
+export default connect(null, mapDispatchToProps)(RegisterScreen);

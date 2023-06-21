@@ -76,7 +76,7 @@ const MainTab = () => {
 const MainStack = () => {
   return (
     <Stack.Navigator
-      initialRouteName="WorkingHour"
+      initialRouteName="Preload"
       screenOptions={{ headerShown: false }}
     >
       <Stack.Screen

@@ -18,6 +18,7 @@ import Services from "../screens/SignUp/RegisterService";
 import DayList from "../screens/DayList/DayList";
 import UploadImage from "../screens/ImageUpload/ImageUpload";
 import WorkingHours from "../screens/WorkingHours/WorkingHours";
+import Congratulations from "../screens/FinalPage/FinalPage";
 // Create a stack navigator
 
 const Stack = createNativeStackNavigator();
@@ -91,6 +92,7 @@ const MainStack = () => {
       <Stack.Screen name="DayList" component={DayList} />
       <Stack.Screen name="ImageUpload" component={UploadImage}/>
       <Stack.Screen name="WorkingHour" component={WorkingHours}/>
+      <Stack.Screen name="Congratulations" component={Congratulations}/>
       <Stack.Screen name="Main" component={MainTab} />
     </Stack.Navigator>
   );

@@ -8,10 +8,13 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { useNavigation } from '@react-navigation/native';
+
 import { collection, addDoc } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useSelector } from 'react-redux';
 
 const durationOptions = [
   { label: "30 min", value: "30" },
@@ -22,8 +25,11 @@ const durationOptions = [
   { label: "3:00 hour", value: "180" },
 ];
 
-const Services = ({ route }) => {
+const Services = () => {
   const [services, setServices] = useState([]);
+  const navigation = useNavigation();
+  const userId = useSelector((state) => state.userId);
+
   const [newService, setNewService] = useState({
     name: "",
     duration: "",
@@ -42,7 +48,7 @@ const Services = ({ route }) => {
 
   const handleAddService = async () => {
     const db = getFirestore();
-    const { userId } = route.params;
+   
 
     try {
       const serviceToAdd = { ...newService, userId };
@@ -57,6 +63,7 @@ const Services = ({ route }) => {
         duration: "",
         priceCategory: "",
       });
+      navigation.navigate('WorkingHour');
     } catch (error) {
       console.error("Error adding service: ", error);
     }

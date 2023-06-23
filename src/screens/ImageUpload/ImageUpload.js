@@ -2,11 +2,17 @@ import React, { useState } from 'react';
 import { Button, View, Text, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, putString, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
+import { getFirestore, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+
+
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../firebase.config';
+import { useSelector } from 'react-redux';
 
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
+const db = getFirestore(app);
 
 const styles = StyleSheet.create({
   container: {
@@ -16,18 +22,19 @@ const styles = StyleSheet.create({
     height: 200,
     borderWidth: 1,
     borderColor: 'dotted',
-    borderRadius: 0,
+    borderRadius: 8,
     borderStyle: 'dashed',
     marginBottom: 16,
   },
   image: {
-    width: 200,
-    height: 200,
-    borderRadius: 0,
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
   },
   text: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#888',
   },
   flexContainer: {
     flex: 1,
@@ -48,6 +55,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
+  buttonContainer: {
+    marginBottom: 16,
+  },
+  uploadButton: {
+    marginBottom: 16,
+  },
 });
 
 export default function App() {
@@ -55,6 +68,8 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isImageSelected, setIsImageSelected] = useState(false);
+  const userId = useSelector((state) => state.userId);
+  const navigation = useNavigation();
 
   const handleImageSelection = async () => {
     try {
@@ -136,6 +151,29 @@ export default function App() {
         const downloadURL = await getDownloadURL(storageRef);
   
         console.log('Image uploaded successfully:', downloadURL);
+          console.log("image type is", typeof userId);
+          console.log(userId.userIdProperty);
+          const userIdString = JSON.stringify(userId);
+          const userIdObject = JSON.parse(userIdString);
+          const userIdReference = userIdObject.userId;
+          console.log(userIdReference);
+        // Save the image reference to Firestore
+        const profileRef = doc(db,'profile',userIdReference);
+        const profileSnapshot = await getDoc(profileRef);
+        
+        if (profileSnapshot.exists()) {
+          await updateDoc(profileRef, {
+            image: downloadURL,
+          });
+        } else {
+          await setDoc(profileRef, {
+            image: downloadURL,
+          });
+        }
+  
+        console.log('Image reference saved to Firestore.');
+      navigation.navigate('Congratulations');
+        
       } catch (error) {
         console.error('Error uploading image:', error);
       } finally {
@@ -148,16 +186,21 @@ export default function App() {
       console.log('No image selected.');
     }
   };
+  
 
   return (
-<View style={styles.flexContainer}>
+    <View style={styles.flexContainer}>
       <View style={styles.sidebar}>
         <Text style={styles.sidebarTitle}>Page Title</Text>
       </View>
 
       <View>
-        <Button title="Select from Library" onPress={handleImageSelection} />
-        <Button title="Take a Photo" onPress={handleCameraCapture} />
+        <View style={styles.buttonContainer}>
+          <Button title="Select from Library" onPress={handleImageSelection} />
+        </View>
+        <View style={styles.buttonContainer}>
+          <Button title="Take a Photo" onPress={handleCameraCapture} />
+        </View>
 
         {isImageSelected && selectedImage ? (
           <View style={styles.container}>
@@ -176,11 +219,13 @@ export default function App() {
         )}
 
         {isImageSelected && (
-          <Button
-            title={uploading ? `Uploading: ${progress.toFixed(2)}%` : 'Upload'}
-            onPress={handleUploadButtonPress}
-            disabled={uploading}
-          />
+          <View style={styles.uploadButton}>
+            <Button
+              title={uploading ? `Uploading: ${progress.toFixed(2)}%` : 'Upload'}
+              onPress={handleUploadButtonPress}
+              disabled={uploading}
+            />
+          </View>
         )}
       </View>
     </View>

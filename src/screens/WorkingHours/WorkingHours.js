@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../../firebase.config';
+import { useNavigation } from '@react-navigation/native';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -24,6 +25,7 @@ const WorkingHoursPage = () => {
   const [pickerModal, setPickerModal] = useState(false);
   const [isSettingStartTime, setIsSettingStartTime] = useState(true);
   const [isAllSet, setIsAllSet] = useState(false);
+  const navigation = useNavigation();
 
   const userId = useSelector((state) => state.userId);
   
@@ -96,6 +98,8 @@ const WorkingHoursPage = () => {
 
       // Perform any additional actions or navigation after storing the data
       console.log('Working hours stored in Firestore');
+      navigation.navigate('ImageUpload');
+      
     } catch (error) {
       // Handle the error
       console.log('Error storing working hours:', error);

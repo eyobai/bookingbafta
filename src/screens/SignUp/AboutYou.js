@@ -28,6 +28,7 @@ import {
   set,
 } from "firebase/firestore";
 import { setUserId } from "../../redux/action";
+import * as Location from 'expo-location';
 
 const RegisterScreen = ({ setUserId }) => {
   const navigation = useNavigation();
@@ -72,29 +73,57 @@ const RegisterScreen = ({ setUserId }) => {
 
     setIsLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
+      .then(async (userCredential) => {
         // User registration successful
         const user = userCredential.user;
         const userDocRef = doc(db, "users", user.uid);
         setUserId(user.uid); // Dispatch the action to update the userId in Redux store
 
-        // Save the user's email in Firestore
-        setDoc(userDocRef, { email, phone, businessName, name })
+        // Retrieve the user's location
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setErrorMessage('Location permission denied');
+          setIsLoading(false);
+          return;
+        }
+      
+        let location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+
+        // Save the user's email, location, and other details in Firestore
+        setDoc(userDocRef, { email, phone, businessName, name, location: { latitude, longitude } })
           .then(() => {
-            console.log("User registered and email saved in Firestore:", user);
+            console.log("User registered and data saved in Firestore:", user);
           })
           .catch((error) => {
-            console.error("Error saving email in Firestore:", error);
+            console.error("Error saving data in Firestore:", error);
           })
           .finally(() => {
             setIsLoading(false);
           });
 
-        navigation.navigate("WorkingHour");
+        navigation.navigate("BusinessCategory");
       })
       .catch((error) => {
         console.error("Error registering user:", error);
         setIsLoading(false);
+        if (error.code === "auth/email-already-in-use") {
+          Alert.alert(
+            "User Already Exists",
+            "The email address is already registered. Please login instead.",
+            [
+              {
+                text: "OK",
+                onPress: () => navigation.navigate("SignIn"),
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            "Registration Error",
+            "An error occurred during registration. Please try again later."
+          );
+        }
       });
   };
 

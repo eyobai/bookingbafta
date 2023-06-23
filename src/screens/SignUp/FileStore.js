@@ -1,90 +1,204 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Button } from "react-native";
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  onSnapshot,
-} from "firebase/firestore";
+import React, { useState } from 'react';
+import { Button, View, Text, ActivityIndicator, Image, StyleSheet } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { initializeApp } from 'firebase/app';
+import { firebaseConfig } from '../../firebase.config';
+import { useNavigation } from '@react-navigation/native';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCujg142JHu-h9i68_zS5b4Wt-466u1xmM",
-  authDomain: "gizeye-20fa5.firebaseapp.com",
-  projectId: "gizeye-20fa5",
-  storageBucket: "gizeye-20fa5.appspot.com",
-  messagingSenderId: "29032338202",
-  appId: "1:29032338202:web:bc79107d3a2b8965ac12a3",
-  measurementId: "G-CJRE4ZYMWV",
-};
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 200,
+    height: 200,
+    borderWidth: 1,
+    borderColor: 'dotted',
+    borderRadius: 8,
+    borderStyle: 'dashed',
+    marginBottom: 16,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  text: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#888',
+  },
+  flexContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sidebar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 50,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sidebarTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  buttonContainer: {
+    marginBottom: 16,
+  },
+  uploadButton: {
+    marginBottom: 16,
+  },
+});
 
-const Fstore = () => {
-  const [data, setData] = useState("");
-  const [storedData, setStoredData] = useState("");
+export default function App() {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isImageSelected, setIsImageSelected] = useState(false);
+  const navigation = useNavigation();
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      doc(db, "data", "example"),
-      (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const retrievedData = docSnapshot.data().value;
-          setStoredData(retrievedData);
-        }
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  const saveSalonData = async (salonData) => {
+  const handleImageSelection = async () => {
     try {
-      const salonRef = doc(db, "salons", salonData.salonId);
-      await setDoc(salonRef, salonData);
-      console.log("Salon data saved successfully!");
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
+        console.log('Permission denied');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.cancelled && result.assets.length > 0) {
+        const { uri } = result.assets[0];
+        setSelectedImage(uri);
+        setIsImageSelected(true);
+      } else {
+        console.log('Image selection cancelled.');
+      }
     } catch (error) {
-      console.error("Error saving salon data:", error);
+      console.error('Error selecting image:', error);
+    }
+  };;
+
+  const handleCameraCapture = async () => {
+    try {
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
+        console.log('Permission denied');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.cancelled && result.assets.length > 0) {
+        const { uri } = result.assets[0];
+        setSelectedImage(uri);
+        setIsImageSelected(true);
+      } else {
+        console.log('Image capture cancelled.');
+      }
+    } catch (error) {
+      console.error('Error capturing image:', error);
     }
   };
 
-  // Usage: Call the saveSalonData function with the salon data you want to save
-  const salonData = {
-    salonId: "salonId2",
-    name: "Salon A",
-    address: "123 Main St",
-    phone: "123-456-7890",
-    services: [
-      {
-        serviceId: "serviceId2",
-        name: "Haircut",
-        price: 30,
-      },
-    ],
+  const handleUploadButtonPress = async () => {
+    if (selectedImage) {
+      try {
+        const filename = selectedImage.substring(selectedImage.lastIndexOf('/') + 1);
+        const response = await fetch(selectedImage);
+        const blob = await response.blob();
+
+        const storageRef = ref(storage, `images/${filename}`);
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+
+        uploadTask.on('state_changed', (snapshot) => {
+          const progressPercentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setProgress(progressPercentage);
+        });
+
+        setUploading(true);
+
+        await uploadTask;
+
+        const downloadURL = await getDownloadURL(storageRef);
+
+        console.log('Image uploaded successfully:', downloadURL);
+        navigation.navigate('Congratulations');
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      } finally {
+        setUploading(false);
+        setProgress(0);
+        setIsImageSelected(false);
+        setSelectedImage(null);
+      }
+    } else {
+      console.log('No image selected.');
+    }
   };
 
-  saveSalonData(salonData);
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Stored Data: {storedData}</Text>
-      <TextInput
-        placeholder="Enter data"
-        onChangeText={(text) => setData(text)}
-        value={data}
-        style={{
-          marginVertical: 10,
-          paddingHorizontal: 10,
-          height: 40,
-          borderColor: "gray",
-          borderWidth: 1,
-        }}
-      />
-      <Button title="Save Data" onPress={saveSalonData} />
+    <View style={styles.flexContainer}>
+      <View style={styles.sidebar}>
+        <Text style={styles.sidebarTitle}>Page Title</Text>
+      </View>
+
+      <View>
+        <View style={styles.buttonContainer}>
+          <Button title="Select from Library" onPress={handleImageSelection} />
+        </View>
+        <View style={styles.buttonContainer}>
+          <Button title="Take a Photo" onPress={handleCameraCapture} />
+        </View>
+
+        {isImageSelected && selectedImage ? (
+          <View style={styles.container}>
+            <Image source={{ uri: selectedImage }} style={styles.image} />
+          </View>
+        ) : (
+          <View style={styles.container}>
+            <Text style={styles.text}>Add workplace photo</Text>
+          </View>
+        )}
+
+        {uploading && (
+          <View>
+            <ActivityIndicator size="small" color="#0000ff" />
+          </View>
+        )}
+
+        {isImageSelected && (
+          <View style={styles.uploadButton}>
+            <Button
+              title={uploading ? `Uploading: ${progress.toFixed(2)}%` : 'Upload'}
+              onPress={handleUploadButtonPress}
+              disabled={uploading}
+            />
+          </View>
+        )}
+      </View>
     </View>
   );
-};
-
-export default Fstore;
+}

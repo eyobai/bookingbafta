@@ -39,7 +39,7 @@ const SignIn = () => {
     }
     console.log(`email is ${email} and password is ${password}`);
     navigation.reset({
-      routes: [{ name: "MainTab" }],
+      routes: [{ name: "Main" }],
     });
   };
   const notRegisterd = () => {

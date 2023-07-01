@@ -9,6 +9,7 @@ import Search from "../screens/Search/Search";
 import Appointments from "../screens/Appointments/Appointments";
 import Favorites from "../screens/Favorites/Favorites";
 import Profile from "../screens/Profile/Profile";
+import Setting from "../screens/Setting/Setting";
 
 import Preload from "../screens/Preload/Preload";
 import SignIn from "../screens/SignIn/SignIn";
@@ -19,6 +20,7 @@ import DayList from "../screens/DayList/DayList";
 import UploadImage from "../screens/ImageUpload/ImageUpload";
 import WorkingHours from "../screens/WorkingHours/WorkingHours";
 import Congratulations from "../screens/FinalPage/FinalPage";
+import ManageServiceProviders from "../screens/AddServiceProviders/ManageServiceProviders";
 // Create a stack navigator
 
 const Stack = createNativeStackNavigator();
@@ -48,8 +50,8 @@ const MainTab = () => {
             case "Favorites":
               iconName = "favorite";
               break;
-            case "Profile":
-              iconName = "person";
+            case "Setting":
+              iconName = "settings";
               break;
             default:
               iconName = "home";
@@ -69,7 +71,8 @@ const MainTab = () => {
       <Tab.Screen name="Search" component={Search} />
       <Tab.Screen name="Appointments" component={Appointments} />
       <Tab.Screen name="Favorites" component={Favorites} />
-      <Tab.Screen name="Profile" component={Profile} />
+      {/*   <Tab.Screen name="Profile" component={Profile} />*/}
+      <Tab.Screen name="Setting" component={Setting} />
     </Tab.Navigator>
   );
 };
@@ -90,9 +93,14 @@ const MainStack = () => {
       <Stack.Screen name="BusinessCategory" component={BusinessCategory} />
       <Stack.Screen name="Services" component={Services} />
       <Stack.Screen name="DayList" component={DayList} />
-      <Stack.Screen name="ImageUpload" component={UploadImage}/>
-      <Stack.Screen name="WorkingHour" component={WorkingHours}/>
-      <Stack.Screen name="Congratulations" component={Congratulations}/>
+      <Stack.Screen name="ImageUpload" component={UploadImage} />
+      <Stack.Screen name="WorkingHour" component={WorkingHours} />
+      <Stack.Screen name="Congratulations" component={Congratulations} />
+      {/* setting screens */}
+      <Stack.Screen
+        name="ManageServiceProviders"
+        component={ManageServiceProviders}
+      />
       <Stack.Screen name="Main" component={MainTab} />
     </Stack.Navigator>
   );

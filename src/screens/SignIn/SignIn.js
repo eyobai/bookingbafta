@@ -14,8 +14,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { firebaseConfig } from "../../firebase.config";
 import { initializeApp } from "firebase/app";
-
-const SignIn = () => {
+import { connect } from 'react-redux';
+import { setUserId } from "../../redux/action";
+const SignIn = ({ setUserId }) => {
   const navigation = useNavigation();
 
   const [email, setEmail] = useState("");
@@ -25,12 +26,18 @@ const SignIn = () => {
   const handleLogin = async () => {
     try {
       // Handle login logic here
-      await signInWithEmailAndPassword(auth, email, password);
-
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
       // Save user login status to AsyncStorage
       await AsyncStorage.setItem("isLoggedIn", "true");
-
+      await AsyncStorage.setItem("userId", userId);
+  
       console.log("Signed in successfully");
+      console.log("User ID:", userId);
+
+      // Dispatch the action to set the user ID in Redux store
+      setUserId(userId);
+
       navigation.reset({
         routes: [{ name: "Main" }],
       });
@@ -157,4 +164,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-export default SignIn;
+const mapDispatchToProps = (dispatch) => {
+  return {
+    setUserId: (userId) => dispatch(setUserId(userId)),
+  };
+};
+
+export default connect(null, mapDispatchToProps)(SignIn);

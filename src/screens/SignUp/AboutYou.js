@@ -79,19 +79,11 @@ const RegisterScreen = ({ setUserId }) => {
         const userDocRef = doc(db, "users", user.uid);
         setUserId(user.uid); // Dispatch the action to update the userId in Redux store
 
-        // Retrieve the user's location
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMessage('Location permission denied');
-          setIsLoading(false);
-          return;
-        }
-      
-        let location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
+       
+     
 
         // Save the user's email, location, and other details in Firestore
-        setDoc(userDocRef, { email, phone, businessName, name, location: { latitude, longitude } })
+        setDoc(userDocRef, { email, phone, businessName, name })
           .then(() => {
             console.log("User registered and data saved in Firestore:", user);
           })

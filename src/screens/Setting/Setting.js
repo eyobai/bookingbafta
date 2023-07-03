@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Assuming you have installed the @expo/vector-icons package
 
 const menus = [
@@ -33,9 +33,32 @@ const menus = [
     description: "Manage gift cards for your salon",
     icon: "gift",
   },
+  {
+    title: "Sign Out",
+    description: "Sign out of your account",
+    icon: "exit",
+  },
 ];
 
 function SettingScreen({ navigation }) {
+  const handleSignOut = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => navigation.navigate("SignIn"), // Replace "SignIn" with the appropriate screen name
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Setting Screen</Text>
@@ -43,7 +66,7 @@ function SettingScreen({ navigation }) {
         <TouchableOpacity
           style={styles.menuItem}
           key={index}
-          onPress={() => navigation.navigate(menu.title)}
+         onPress={() => (menu.title === "Sign Out" ? handleSignOut() : navigation.navigate(menu.title))}
         >
           <View style={styles.menuItemInner}>
             <Ionicons

@@ -1,14 +1,11 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  TextInput,
-  Image,
-} from "react-native";
-import ServiceProviderImageUpload from "./ServiceProviderImageUpload";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, TextInput, Image, Alert } from "react-native";
+import { initializeApp } from "firebase/app";
+import { getFirestore, deleteDoc,doc, collection, addDoc } from "firebase/firestore";
+import { connect } from "react-redux";
+import { firebaseConfig } from "../../firebase.config";
+import { useSelector } from 'react-redux';
+const db = getFirestore();
 
 // Sample data of service providers
 const initialServiceProviders = [
@@ -33,38 +30,75 @@ const initialServiceProviders = [
 ];
 
 function ManageServiceProviders() {
-  const [serviceProviders, setServiceProviders] = useState(
-    initialServiceProviders
-  );
+  const userId = useSelector((state) => state.userId);
+
+  const [serviceProviders, setServiceProviders] = useState(initialServiceProviders);
   const [newServiceProvider, setNewServiceProvider] = useState({
     name: "",
     phoneNumber: "",
     profilePicture: null,
   });
 
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
   const removeServiceProvider = (id) => {
-    setServiceProviders((prevServiceProviders) =>
-      prevServiceProviders.filter((provider) => provider.id !== id)
+    Alert.alert(
+      "Remove Service Provider",
+      "Are you sure you want to remove this service provider?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            // Remove the service provider from the state
+            setServiceProviders((prevServiceProviders) =>
+              prevServiceProviders.filter((provider) => provider.id !== id)
+            );
+        
+            try {
+              // Remove the service provider from the database
+              const serviceProviderDocRef = doc(db, "serviceProviders", id);
+              await deleteDoc(serviceProviderDocRef);
+              console.log("Service provider removed from the database.");
+            } catch (error) {
+              console.log("Error removing service provider from the database:", error);
+            }
+          },
+        },
+      ]
     );
   };
 
-  const addServiceProvider = () => {
+  const addServiceProvider = async () => {
     if (newServiceProvider.name !== "") {
       const newProvider = {
-        id: String(serviceProviders.length + 1),
         name: newServiceProvider.name,
         phoneNumber: newServiceProvider.phoneNumber,
         profilePicture: newServiceProvider.profilePicture,
       };
-      setServiceProviders((prevServiceProviders) => [
-        ...prevServiceProviders,
-        newProvider,
-      ]);
-      setNewServiceProvider({
-        name: "",
-        phoneNumber: "",
-        profilePicture: null,
-      });
+   
+      try {
+        // Create a new document in the serviceProviders collection
+        const docRef = await addDoc(collection(db, "users"), newProvider,userId);
+        console.log("Service provider added with ID: ", docRef.id);
+
+        // Update the local state and reset the form
+        setServiceProviders((prevServiceProviders) => [
+          ...prevServiceProviders,
+          { id: docRef.id, ...newProvider },
+        ]);
+        setNewServiceProvider({
+          name: "",
+          phoneNumber: "",
+          profilePicture: null,
+        });
+      } catch (error) {
+        console.error("Error adding service provider: ", error);
+      }
     }
   };
 
@@ -83,7 +117,6 @@ function ManageServiceProviders() {
       </TouchableOpacity>
     </View>
   );
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Manage Service Providers</Text>
@@ -106,7 +139,8 @@ function ManageServiceProviders() {
           }
         />
       </View>
-      <ServiceProviderImageUpload />
+      {/*      <ServiceProviderImageUpload />
+*/}
       <TouchableOpacity style={styles.addButton} onPress={addServiceProvider}>
         <Text style={styles.addButtonText}>Add Service Provider</Text>
       </TouchableOpacity>

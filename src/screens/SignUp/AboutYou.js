@@ -27,7 +27,7 @@ import {
   doc,
   set,
 } from "firebase/firestore";
-import { setUserId } from "../../redux/action";
+import { setUserId } from "../../redux/store";
 import * as Location from 'expo-location';
 
 const RegisterScreen = ({ setUserId }) => {

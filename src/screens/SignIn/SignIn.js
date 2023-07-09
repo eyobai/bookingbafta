@@ -15,7 +15,7 @@ import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { firebaseConfig } from "../../firebase.config";
 import { initializeApp } from "firebase/app";
 import { connect } from 'react-redux';
-import { setUserId } from "../../redux/action";
+import { setUserId } from "../../redux/store";
 const SignIn = ({ setUserId }) => {
   const navigation = useNavigation();
 

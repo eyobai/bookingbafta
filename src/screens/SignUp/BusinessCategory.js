@@ -20,7 +20,7 @@ const db = getFirestore(app);
 const OptionsList = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const userId = useSelector((state) => state.userId);
+  const userId = useSelector((state) => state.user.userId);
 
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

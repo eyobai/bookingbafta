@@ -67,17 +67,16 @@ const OptionsList = () => {
         console.error('User ID is missing.');
         return;
       }
-      const optionsKey = `users/${userId}/options`;
-      const newOptions = {
+      const usersCollectionRef = await addDoc(collection(db,"businessCategory"),{
         selectedOptions,
-        timestamp: Date.now(),
-      };
-      await AsyncStorage.setItem(optionsKey, JSON.stringify(newOptions));
+        userId
+      })
       console.log('Options saved successfully!');
       navigation.navigate('Services');
-    } catch (error) {
-      console.error('Error saving options:', error);
+    }catch(error){
+      console.error('error storing business category',error);
     }
+////
 
     setIsLoading(false);
   };

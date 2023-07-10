@@ -68,7 +68,7 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isImageSelected, setIsImageSelected] = useState(false);
-  const userId = useSelector((state) => state.userId);
+  const userId = useSelector((state) => state.user.userId);
   const navigation = useNavigation();
 
   const handleImageSelection = async () => {

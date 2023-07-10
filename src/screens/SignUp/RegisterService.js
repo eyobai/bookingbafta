@@ -6,6 +6,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../../firebase.config';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);

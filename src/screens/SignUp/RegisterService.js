@@ -1,165 +1,113 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  TextInput,
-  Button,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { Picker } from '@react-native-picker/picker';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { firebaseConfig } from '../../firebase.config';
 import { useNavigation } from '@react-navigation/native';
 
-import { collection, addDoc } from "firebase/firestore";
-import { getFirestore } from "firebase/firestore";
-import { Picker } from "@react-native-picker/picker";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useSelector } from 'react-redux';
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-const durationOptions = [
-  { label: "30 min", value: "30" },
-  { label: "1 hour", value: "60" },
-  { label: "1:30 hour", value: "90" },
-  { label: "2:00 hour", value: "120" },
-  { label: "2:30 hour", value: "150" },
-  { label: "3:00 hour", value: "180" },
-];
 
-const Services = () => {
+
+const ServiceForm = () => {
   const [services, setServices] = useState([]);
-  const navigation = useNavigation();
+  const [serviceName, setServiceName] = useState('');
+  const [serviceDuration, setServiceDuration] = useState('');
+  const [servicePrice, setServicePrice] = useState('');
   const userId = useSelector((state) => state.userId);
+  
+  const navigation = useNavigation();
 
-  const [newService, setNewService] = useState({
-    name: "",
-    duration: "",
-    priceCategory: "",
-  });
-
-  useEffect(() => {
-    // Simulate adding a new service on app start
-    const initialService = {
-      name: "",
-      duration: "",
-      priceCategory: "",
+  const handleAddService = () => {
+    const newService = {
+      name: serviceName,
+      duration: serviceDuration,
+      price: servicePrice,
     };
-    setServices([initialService]);
-  }, []);
 
-  const handleAddService = async () => {
-    const db = getFirestore();
-   
-
-    try {
-      const serviceToAdd = { ...newService, userId };
-      const docRef = await addDoc(collection(db, "services"), serviceToAdd);
-
-      console.log("Service added with ID: ", docRef.id);
-
-      setServices([...services, serviceToAdd]);
-      console.log(services);
-      setNewService({
-        name: "",
-        duration: "",
-        priceCategory: "",
-      });
-      navigation.navigate('WorkingHour');
-    } catch (error) {
-      console.error("Error adding service: ", error);
-    }
+    setServices([...services, newService]);
+    setServiceName('');
+    setServiceDuration('');
+    setServicePrice('');
   };
 
   const handleRemoveService = (index) => {
-    setServices((prevServices) => {
-      const updatedServices = [...prevServices];
-      updatedServices.splice(index, 1);
-      return updatedServices;
-    });
+    const updatedServices = [...services];
+    updatedServices.splice(index, 1);
+    setServices(updatedServices);
   };
 
-  const handleAddAnotherService = () => {
-    setServices((prevServices) => [...prevServices, { ...newService }]);
-    setNewService({
-      name: "",
-      duration: "",
-      priceCategory: "",
-    });
+  const handleLogServices = async () => {
+    try {
+      // Loop through the services and store them in Firestore
+      for (const service of services) {
+        await addDoc(collection(db, 'services'), service,userId);
+      }
+      console.log('Services logged successfully!');
+      navigation.navigate('ImageUpload');
+    } catch (error) {
+      console.error('Error logging services:', error);
+    }
   };
-
-  const handleServiceChange = (value, field, index) => {
-    setServices((prevServices) => {
-      const updatedServices = [...prevServices];
-      updatedServices[index] = {
-        ...updatedServices[index],
-        [field]: value,
-      };
-      return updatedServices;
-    });
-  };
-
+  
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Services</Text>
+      <View style={styles.form}>
+        <Text style={styles.label}>Service Name</Text>
+        <TextInput
+          style={styles.input}
+          value={serviceName}
+          onChangeText={setServiceName}
+        />
 
-      <View style={styles.contentContainer}>
-        <ScrollView style={styles.scrollView}>
-          {services.map((service, index) => (
-            <View key={index} style={styles.fieldContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Service"
-                value={service.name}
-                onChangeText={(text) =>
-                  handleServiceChange(text, "name", index)
-                }
-              />
-              <View style={styles.durationContainer}>
-                <Text style={styles.label}>Duration:</Text>
-                <Picker
-                  style={styles.picker}
-                  selectedValue={service.duration}
-                  onValueChange={(itemValue) =>
-                    handleServiceChange(itemValue, "duration", index)
-                  }
-                >
-                  {durationOptions.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
-              <TextInput
-                style={styles.input}
-                placeholder="Price Category"
-                value={service.priceCategory}
-                onChangeText={(text) =>
-                  handleServiceChange(text, "priceCategory", index)
-                }
-              />
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => handleRemoveService(index)}
-              >
-                <MaterialIcons name="remove-circle" size={24} color="red" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
+<View style={styles.pickerContainer}>
+          <Text style={styles.label}>Service Duration</Text>
+          <Picker
+            selectedValue={serviceDuration}
+            onValueChange={(itemValue) => setServiceDuration(itemValue)}
+            style={styles.picker}
+            dropdownIconColor="#aaa" // Customize the color of the dropdown icon
+            mode="dropdown" // Use "dropdown" mode for a more compact style
+          >
+            <Picker.Item label="30 minutes" value="30" />
+            <Picker.Item label="60 minutes" value="60" />
+            <Picker.Item label="90 minutes" value="90" />
+          </Picker>
+        </View>
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddAnotherService}
-        >
-          <Ionicons name="add" size={32} color="#069BA4" />
+        <Text style={styles.label}>Service Price</Text>
+        <TextInput
+          style={styles.input}
+          value={servicePrice}
+          onChangeText={setServicePrice}
+          keyboardType="numeric"
+        />
+
+        <TouchableOpacity style={styles.addButton} onPress={handleAddService}>
+          <Text style={styles.addButtonText}>Add Service</Text>
         </TouchableOpacity>
+
       </View>
 
-      <TouchableOpacity style={styles.nextBtn} onPress={handleAddService}>
-        <Text style={styles.nextText}>Next</Text>
-      </TouchableOpacity>
+      <ScrollView style={styles.serviceList}>
+        {services.map((service, index) => (
+          <View key={index} style={styles.serviceItem}>
+            <Text style={styles.serviceName}>{service.name}</Text>
+            <Text style={styles.serviceDuration}>Duration: {service.duration} minutes</Text>
+            <Text style={styles.servicePrice}>Price: ${service.price}</Text>
+            <TouchableOpacity onPress={() => handleRemoveService(index)}>
+              <Text style={styles.removeButtonText}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+      
+      <TouchableOpacity style={styles.logButton} onPress={handleLogServices}>
+          <Text style={styles.logButtonText}>Next</Text>
+        </TouchableOpacity>
     </View>
   );
 };
@@ -167,76 +115,80 @@ const Services = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
+    padding: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  contentContainer: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  fieldContainer: {
-    borderWidth: 1,
-    borderColor: "#069BA4",
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 4,
-    padding: 8,
-    marginBottom: 8,
-  },
-  durationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
+  form: {
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    marginRight: 8,
+    marginBottom: 5,
   },
-  picker: {
-    flex: 1,
+  input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 4,
-  },
-  nextBtn: {
-    width: "100%",
-    backgroundColor: "#069BA4",
-    borderRadius: 25,
-    height: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
+    borderColor: '#ccc',
+    padding: 10,
     marginBottom: 10,
   },
-  addButton: {
-    position: "absolute",
-    bottom: 16,
-    right: 16,
-    backgroundColor: "#fff",
-    borderRadius: 30,
-    elevation: 5,
-    width: 60,
-    height: 60,
-    justifyContent: "center",
-    alignItems: "center",
+  pickerContainer: {
+    marginBottom: 20,
   },
-  nextText: {
-    color: "white",
+  picker: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    overflow: 'hidden', // Clip the dropdown options if they exceed the container's boundaries
+  },
+  addButton: {
+    backgroundColor: 'blue',
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+  },
+  addButtonText: {
+    color: 'white',
     fontSize: 16,
-    fontWeight: "bold",
+  },
+  logButton: {
+    backgroundColor: 'green',
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  logButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  serviceList: {
+    flex: 1,
+  },
+  serviceItem: {
+    flexDirection: 'column',
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'gray',
+  },
+  serviceName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  serviceDuration: {
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  servicePrice: {
+    fontSize: 14,
+  },
+  removeButtonText: {
+    color: 'red',
+    marginTop: 5,
   },
 });
 
-export default Services;
+export default ServiceForm;

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
+  FlatList,
 } from "react-native";
 import {
   getFirestore,
@@ -43,11 +44,7 @@ const SalonBookingApp = ({ selectedDate }) => {
   }, [selectedDate]);
 
   const timeTable = [
-    { id: 1, time: "9:00 AM" },
-    { id: 2, time: "9:15 AM" },
-    { id: 3, time: "9:30 AM" },
-    { id: 4, time: "9:45 AM" },
-    { id: 5, time: "10:00 AM" },
+    { id: 1, time: "9:00 AM", service: "Hair Cut" },
     { id: 6, time: "10:15 AM" },
     { id: 7, time: "10:30 AM" },
     { id: 8, time: "10:45 AM" },
@@ -64,7 +61,9 @@ const SalonBookingApp = ({ selectedDate }) => {
     { id: 18, time: "15:30 AM" },
     { id: 29, time: "16:30 AM" },
 
-    // Add more time slots as needed...
+    // Add other time slots with respective services...
+    // Example: { id: 2, time: "9:15 AM", service: "Service Name" },
+    // ...
   ];
 
   const renderTimeSlot = ({ item }) => {
@@ -90,9 +89,16 @@ const SalonBookingApp = ({ selectedDate }) => {
         backgroundColor = "#fafafa";
       }
 
+      // Conditional background color for the 'Hair Cut' service
+      const hairCutBackgroundColor =
+        item.service === "Hair Cut" ? "#FFD700" : backgroundColor;
+
       return (
         <TouchableOpacity
-          style={[styles.cardContainer, { backgroundColor }]} // Apply the background color dynamically
+          style={[
+            styles.cardContainer,
+            { backgroundColor: hairCutBackgroundColor },
+          ]} // Apply the background color dynamically
           onPress={() => handleTimeSlotPress(item.time)}
         >
           <Text style={styles.timeText}>{item.time}</Text>
@@ -103,7 +109,17 @@ const SalonBookingApp = ({ selectedDate }) => {
               </Text>
             ))
           ) : (
-            <Text>No services booked</Text>
+            <Text
+              style={[
+                styles.serviceText,
+                {
+                  backgroundColor:
+                    item.service === "Hair Cut" ? "#FFD700" : "transparent",
+                },
+              ]}
+            >
+              {item.service}
+            </Text>
           )}
         </TouchableOpacity>
       );
@@ -120,11 +136,13 @@ const SalonBookingApp = ({ selectedDate }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Booked Services</Text>
-      <FlatList
-        data={timeTable}
-        renderItem={renderTimeSlot}
-        keyExtractor={(item) => item.id.toString()}
-      />
+      <ScrollView>
+        <FlatList
+          data={timeTable}
+          renderItem={renderTimeSlot}
+          keyExtractor={(item) => item.id.toString()}
+        />
+      </ScrollView>
     </View>
   );
 };

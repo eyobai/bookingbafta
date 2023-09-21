@@ -4,12 +4,14 @@ import { Ionicons } from "@expo/vector-icons"; // Assuming you have installed th
 
 const menus = [
   {
-    title: "ManageServiceProviders",
+    title: "Manage Service Providers",
+    goTo:"ManageServiceProviders",
     description: "Manage your salon service providers",
     icon: "people",
   },
   {
     title: "Service Setup",
+    goTo: "serviceSetup",
     description: "Set up and customize your salon services",
     icon: "cog",
   },
@@ -66,7 +68,7 @@ function SettingScreen({ navigation }) {
         <TouchableOpacity
           style={styles.menuItem}
           key={index}
-         onPress={() => (menu.title === "Sign Out" ? handleSignOut() : navigation.navigate(menu.title))}
+         onPress={() => (menu.title === "Sign Out" ? handleSignOut() : navigation.navigate(menu.goTo))}
         >
           <View style={styles.menuItemInner}>
             <Ionicons

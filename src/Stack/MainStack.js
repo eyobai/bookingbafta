@@ -25,6 +25,7 @@ import AddressForm from "../screens/AddressForm";
 import DisplayAddress from "../screens/DisplayAddress";
 import ServiceProviderHours from "../screens/AddServiceProviders/ServiceProvidersHours";
 import ServiceProviderImageUpload from "../screens/AddServiceProviders/ServiceProviderImageUpload";
+import ServiceSetup from "../screens/ServiceSetup/ServiceSetup";
 const Stack = createNativeStackNavigator();
 // Create a bottom tab navigator
 const Tab = createBottomTabNavigator();
@@ -96,7 +97,7 @@ const MainStack = () => {
       <Stack.Screen name="Services" component={Services} />
       <Stack.Screen name="DayList" component={DayList} />
       <Stack.Screen name="ImageUpload" component={UploadImage} />
-  
+
       <Stack.Screen name="Congratulations" component={Congratulations} />
       {/* setting screens */}
       <Stack.Screen
@@ -105,10 +106,14 @@ const MainStack = () => {
       />
       <Stack.Screen name="Main" component={MainTab} />
 
-      <Stack.Screen name="AddressForm" component={AddressForm}/>
-      <Stack.Screen name="displayaddress" component={DisplayAddress}/>
-      <Stack.Screen name="workingHours" component={ServiceProviderHours}/>
-      <Stack.Screen name="serviceProvidersImageUpload" component={ServiceProviderImageUpload}/>
+      <Stack.Screen name="AddressForm" component={AddressForm} />
+      <Stack.Screen name="displayaddress" component={DisplayAddress} />
+      <Stack.Screen name="workingHours" component={ServiceProviderHours} />
+      <Stack.Screen
+        name="serviceProvidersImageUpload"
+        component={ServiceProviderImageUpload}
+      />
+      <Stack.Screen name="serviceSetup" component={ServiceSetup} />
     </Stack.Navigator>
   );
 };

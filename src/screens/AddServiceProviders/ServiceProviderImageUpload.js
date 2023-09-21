@@ -14,72 +14,27 @@ const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
 const db = getFirestore(app);
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 200,
-    height: 200,
-    borderWidth: 1,
-    borderColor: 'dotted',
-    borderRadius: 8,
-    borderStyle: 'dashed',
-    marginBottom: 16,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#888',
-  },
-  flexContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sidebar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: 50,
-    backgroundColor: '#f0f0f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sidebarTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  buttonContainer: {
-    marginBottom: 16,
-  },
-  uploadButton: {
-    marginBottom: 16,
-  },
-});
+const desiredImageWidth = 340;
+const desiredImageHeight = 200;
 
 export default function App() {
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [isImageSelected, setIsImageSelected] = useState(false);
-  const userId = useSelector((state) => state.user);
-  const workingHours = useSelector((state) => state.workingHour.workingHours);
-
+  const [imageURI, setImageURI] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const navigation = useNavigation();
-
+  
+  const adminId = useSelector((state) => state.user.userId);
+  const employeeId = useSelector((state) => state.employee);
+  const workingHours = useSelector((state) => state.workingHour.workingHours);
   const servicveProviderData = useSelector((state) => state.serviceProvider.userData);
+  
   const serviceProviderInformation= async () => {
     try {
 
       const usersCollectionRef = await addDoc(collection(db,"serviceprovidersusers"),{
         servicveProviderData,
-        userId
+      adminId:adminId,
+       employeeId:employeeId
       })
  
     } catch (error) {
@@ -91,174 +46,147 @@ export default function App() {
   try{
     const usersCollectionRef = await addDoc(collection(db,"serviceProviderWorkingHours"),{
       workingHours,
-      userId
+      adminId:adminId,
+      employeeId:employeeId
     })
   }catch(error){
     console.error('error storing workingHours',error);
   }
  };
 
-  const handleImageSelection = async () => {
-    try {
-      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
-      const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+ useEffect(() => {
+  (async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    setIsLoading(false);
 
-      if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
-        console.log('Permission denied');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-
-      if (!result.cancelled && result.assets.length > 0) {
-        const { uri } = result.assets[0];
-        setSelectedImage(uri);
-        setIsImageSelected(true);
-      } else {
-        console.log('Image selection cancelled.');
-      }
-    } catch (error) {
-      console.error('Error selecting image:', error);
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please grant camera roll permissions to upload images.');
     }
-  };
+  })();
+}, []);
 
-  const handleCameraCapture = async () => {
-    try {
-      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
-      const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+const selectImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [desiredImageWidth, desiredImageHeight],
+    quality: 1,
+  });
 
-      if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
-        console.log('Permission denied');
-        return;
-      }
+  if (!result.cancelled) {
+    setImageURI(result.uri);
+  }
+};
 
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
+// ... Existing code ...
 
-      if (!result.cancelled && result.assets.length > 0) {
-        const { uri } = result.assets[0];
-        setSelectedImage(uri);
-        setIsImageSelected(true);
-      } else {
-        console.log('Image capture cancelled.');
-      }
-    } catch (error) {
-      console.error('Error capturing image:', error);
-    }
-  };
+const uploadImage = async () => {
+  console.log('userId:', employeeId);
+  if (!imageURI) {
+    Alert.alert('No image selected', 'Please select an image to upload.');
+    return;
+  }
 
-  const handleUploadButtonPress = async () => {
-    if (selectedImage) {
+  const response = await fetch(imageURI);
+  const blob = await response.blob();
+
+  const storageRef = ref(storage, 'newimages/' + Date.now() + '.jpg');
+  const uploadTask = uploadBytesResumable(storageRef, blob);
+
+  uploadTask.on(
+    'state_changed',
+    (snapshot) => {
+      const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+      setUploadProgress(progress);
+    },
+    (error) => {
+      console.log('Error uploading image:', error);
+      Alert.alert('Upload failed', 'Failed to upload image. Please try again.');
+    },
+    async () => {
       try {
-        const filename = selectedImage.substring(selectedImage.lastIndexOf('/') + 1);
-        const response = await fetch(selectedImage);
-        const blob = await response.blob();
-  
-        const storageRef = ref(storage, `images/${filename}`);
-        const uploadTask = uploadBytesResumable(storageRef, blob);
-  
-        uploadTask.on('state_changed', (snapshot) => {
-          const progressPercentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setProgress(progressPercentage);
-        });
-  
-        setUploading(true);
-  
-        await uploadTask;
-  
-        const downloadURL = await getDownloadURL(storageRef);
-  
-        console.log('Image uploaded successfully:', downloadURL);
-          console.log("image type is", typeof userId);
-          console.log(userId.userIdProperty);
-          const userIdString = JSON.stringify(userId);
-          const userIdObject = JSON.parse(userIdString);
-          const userIdReference = userIdObject.userId;
-          console.log(userIdReference);
-        // Save the image reference to Firestore
-        const profileRef = doc(db,'profile',userIdReference);
-        const profileSnapshot = await getDoc(profileRef);
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+        // Store the image reference in Firestore
+        const imageReference = {
+          url: downloadURL,
+          adminId:adminId,
+          employeeId: employeeId
         
-        if (profileSnapshot.exists()) {
-          await updateDoc(profileRef, {
-            image: downloadURL,
-          });
-        } else {
-          await setDoc(profileRef, {
-            image: downloadURL,
-          });
-        }
-  
-        console.log('Image reference saved to Firestore.');
-        //call the service provider information
+        };
+
+        await addDoc(collection(db, 'employeeProfile'), imageReference);
+
+        // Call the service provider information
         await serviceProviderInformation();
-        //call the serviceProviderWorkingHours
+
+        // Call the serviceProviderWorkingHours
         await serviceProviderWorkingHours();
-      navigation.navigate('Congratulations');
-        
+        console.log(adminId);
+        navigation.navigate('Congratulations');
       } catch (error) {
-        console.error('Error uploading image:', error);
-      } finally {
-        setUploading(false);
-        setProgress(0);
-        setIsImageSelected(false);
-        setSelectedImage(null);
+        console.log('Error storing image reference:', error);
       }
-    } else {
-      console.log('No image selected.');
     }
-  };
+  );
+};
+
+// ... Existing code ...
+
+if (isLoading) {
+  return <View style={styles.container}><Text>Loading...</Text></View>;
+}
+
+
   
 
-  return (
-    <View style={styles.flexContainer}>
-      <View style={styles.sidebar}>
-        <Text style={styles.sidebarTitle}>Page Title</Text>
-      </View>
+return (
+  <View style={styles.container}>
+    <View style={styles.imageContainer}>
+      <View style={styles.dottedBox} />
 
-      <View>
-        <View style={styles.buttonContainer}>
-          <Button title="Select from Library" onPress={handleImageSelection} />
-        </View>
-        <View style={styles.buttonContainer}>
-          <Button title="Take a Photo" onPress={handleCameraCapture} />
-        </View>
-
-        {isImageSelected && selectedImage ? (
-          <View style={styles.container}>
-            <Image source={{ uri: selectedImage }} style={styles.image} />
-          </View>
-        ) : (
-          <View style={styles.container}>
-            <Text style={styles.text}>Add workplace photo</Text>
-          </View>
-        )}
-
-        {uploading && (
-          <View>
-            <ActivityIndicator size="small" color="#0000ff" />
-          </View>
-        )}
-
-        {isImageSelected && (
-          <View style={styles.uploadButton}>
-            <Button
-              title={uploading ? `Uploading: ${progress.toFixed(2)}%` : 'Upload'}
-              onPress={handleUploadButtonPress}
-              disabled={uploading}
-            />
-          </View>
-        )}
-      </View>
+      {imageURI && (
+        <>
+          <Image source={{ uri: imageURI }} style={styles.image} resizeMode="contain" />
+        </>
+      )}
     </View>
-  );
+    <Button title="Select Image" onPress={selectImage} />
+    <Button title="Upload Image" onPress={uploadImage} disabled={!imageURI} />
+
+    {uploadProgress > 0 && (
+      <Text style={styles.progressText}>{`Uploading: ${uploadProgress}%`}</Text>
+    )}
+  </View>
+);
 }
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageContainer: {
+    position: 'relative',
+    width: desiredImageWidth,
+    height: desiredImageHeight,
+  },
+  image: {
+    width: desiredImageWidth,
+    height: desiredImageHeight,
+  },
+  dottedBox: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: desiredImageWidth,
+    height: desiredImageHeight,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'black',
+    borderRadius: 5,
+  },
+  progressText: {
+    marginTop: 10,
+  },
+});

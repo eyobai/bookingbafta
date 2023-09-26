@@ -17,8 +17,15 @@ import {
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { firebaseConfig } from "../../firebase.config";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, setDoc, doc, set } from "firebase/firestore";
-import { setEmployeeId } from "../../redux/employeeStore";
+import {
+  getFirestore,
+  collection,
+  setDoc,
+  doc,
+  set,
+  getDoc,
+} from "firebase/firestore";
+import employeeIdReducer, { setEmployeeId } from "../../redux/employeeStore";
 import * as Location from "expo-location";
 
 const RegisterScreen = ({ setEmployeeId }) => {
@@ -37,74 +44,62 @@ const RegisterScreen = ({ setEmployeeId }) => {
   const app = initializeApp(firebaseConfig);
   const firestore = getFirestore();
 
+  // ...
+
   const handleRegister = async () => {
     const auth = getAuth();
     const db = getFirestore(app);
 
-    if (!email || !password || !confirmPassword) {
-      setErrorMessage("Please fill in all fields.");
-      setIsLoading(false); // Set loading state to false
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage("Passwords do not match.");
-      setIsLoading(false); // Set loading state to false
-      return;
-    }
-
-    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-
-    // Check if the email matches the regular expression
-    if (!emailRegex.test(email)) {
-      setErrorMessage("Email is not correct");
-      setIsLoading(false); // Set loading state to false
-      return;
-    }
-
     setIsLoading(true);
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        // User registration successful
-        const user = userCredential.user;
-        const userDocRef = doc(db, "employees", user.uid);
-        setEmployeeId(user.uid); // Dispatch the action to update the userId in Redux store
 
-        // Save the user's email, location, and other details in Firestore
-        setDoc(userDocRef, { email, phone, name, adminId: adminId })
-          .then(() => {
-            console.log("User registered and data saved in Firestore:", user);
-          })
-          .catch((error) => {
-            console.error("Error saving data in Firestore:", error);
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
+    // Create a new employee user with email and password
+    const employeeCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    const serviceProviderId = employeeCredential.user.uid;
+    console.log(`employee id ${serviceProviderId}`);
+    // Create a reference to the user's Firestore document using their ID
+    const userDocRef = doc(db, "users", adminId);
 
-        navigation.navigate("workingHours");
+    // Fetch the existing data in the document
+    const userDocSnapshot = await getDoc(userDocRef);
+
+    // Get the current data or initialize an empty object if it doesn't exist
+    const existingUserData = userDocSnapshot.exists()
+      ? userDocSnapshot.data()
+      : {};
+
+    // Get the current employees array or initialize an empty array if it doesn't exist
+    const existingEmployees = existingUserData.employees || [];
+
+    // Create a new employee object
+    const newEmployee = {
+      email,
+      phone,
+      name,
+      serviceProviderId,
+      // Add any other employee data you want to store here
+    };
+
+    // Merge the new employee data with the existing employees array
+    const updatedEmployees = [...existingEmployees, newEmployee];
+
+    // Update the Firestore document with the updated employees array
+    setDoc(userDocRef, { ...existingUserData, employees: updatedEmployees })
+      .then(() => {
+        console.log("User registered and employee data saved in Firestore:");
       })
       .catch((error) => {
-        console.error("Error registering user:", error);
+        console.error("Error saving data in Firestore:", error);
+      })
+      .finally(() => {
         setIsLoading(false);
-        if (error.code === "auth/email-already-in-use") {
-          Alert.alert(
-            "User Already Exists",
-            "The email address is already registered. Please login instead.",
-            [
-              {
-                text: "OK",
-                onPress: () => navigation.navigate("SignIn"),
-              },
-            ]
-          );
-        } else {
-          Alert.alert(
-            "Registration Error",
-            "An error occurred during registration. Please try again later."
-          );
-        }
       });
+
+    setEmployeeId(serviceProviderId); // Dispatch the action to update the userId in Redux store
+    navigation.navigate("workingHours");
   };
 
   const AlreadyRegistered = () => {

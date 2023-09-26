@@ -31,7 +31,8 @@ const ImageUpload = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
   const navigation = useNavigation();
-  const userId = useSelector((state) => state.user.userId);
+  const userId = "3AYD3AKKMdeqjggyl1H7ko9sLFn2";
+  //const userId = useSelector((state) => state.user.userId);
 
   useEffect(() => {
     (async () => {

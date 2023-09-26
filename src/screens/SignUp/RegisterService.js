@@ -48,7 +48,7 @@ const ServiceForm = () => {
         return;
       }
 
-      const response = await axios.post(`http://192.168.0.3:3001/addServices`, {
+      const response = await axios.post(`http://192.168.1.2:3001/addServices`, {
         userId,
         services,
       });

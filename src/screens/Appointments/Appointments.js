@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   FlatList,
+  RefreshControl,
 } from "react-native";
 import { Colors } from "react-native/Libraries/NewAppScreen";
 import moment from "moment";
@@ -19,7 +20,7 @@ const MyComponent = () => {
   const [selectedDate, setSelectedDate] = useState(
     moment().format("DD/MM/YYYY")
   );
-  const [bookings, setBookings] = useState([]); // Initialize as an empty array
+  const [bookings, setBookings] = useState([]);
   const weekDays = [
     "Monday",
     "Tuesday",
@@ -31,6 +32,7 @@ const MyComponent = () => {
   ];
 
   const [selectedDay, setSelectedDay] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleDaySelect = (day) => {
     const today = moment().format("dddd");
@@ -47,8 +49,20 @@ const MyComponent = () => {
     setSelectedDay(day);
   };
 
-  useEffect(() => {
-    // Fetch service providers data from your server route
+  const onRefresh = () => {
+    setRefreshing(true);
+
+    // Replace this with your data fetching logic
+    fetchServiceProviders();
+    fetchBookings();
+
+    // Simulate refreshing for 1 second
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  const fetchServiceProviders = () => {
     fetch(
       `http://server.bafta.co/users/TMugCo4XGRQa8kmXEXJejTlSWUh1/serviceProviders`
     )
@@ -59,54 +73,67 @@ const MyComponent = () => {
       .catch((error) =>
         console.error("Error fetching service providers:", error)
       );
-  }, [userId]);
+  };
 
-  useEffect(() => {
+  const fetchBookings = () => {
     if (selectedDate && selectedProviderId && userId) {
-      // Make an HTTP request to your Express route
       fetch(
         `http://192.168.1.7:3001/fetchBooking?businessOwnerId=${userId}&selectedCalendar=${selectedDate}&serviceProviderId=${selectedProviderId}`
       )
         .then((response) => response.json())
         .then((data) => {
-          const bookings = data.bookings || []; // Initialize as an empty array if data.bookings is undefined
+          const bookings = data.bookings || [];
           setBookings(bookings);
         })
         .catch((error) => console.error("Error fetching bookings:", error));
     }
+  };
+
+  useEffect(() => {
+    fetchServiceProviders();
+  }, [userId]);
+
+  useEffect(() => {
+    fetchBookings();
   }, [selectedDate, selectedProviderId, userId]);
 
   return (
     <View style={styles.container}>
-      <View>
-        <WeekdaySelector
-          weekDays={weekDays}
-          selectedDay={selectedDay}
-          handleDaySelect={handleDaySelect}
-        />
-      </View>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View>
+          <WeekdaySelector
+            weekDays={weekDays}
+            selectedDay={selectedDay}
+            handleDaySelect={handleDaySelect}
+          />
+        </View>
 
-      <View>
-        <ServiceProvidersList
-          serviceProviders={serviceProviders}
-          setSelectedProviderId={setSelectedProviderId}
-          selectedProviderId={selectedProviderId}
-        />
-      </View>
-      <View>
-        <Text style={styles.title}>Bookings</Text>
-        {bookings !== null ? (
-          bookings.length > 0 ? (
-            <BookingList bookings={bookings} />
+        <View>
+          <ServiceProvidersList
+            serviceProviders={serviceProviders}
+            setSelectedProviderId={setSelectedProviderId}
+            selectedProviderId={selectedProviderId}
+          />
+        </View>
+        <View>
+          <Text style={styles.title}>Bookings</Text>
+          {bookings !== null ? (
+            bookings.length > 0 ? (
+              <BookingList bookings={bookings} />
+            ) : (
+              <Text>
+                No bookings available for the selected date and provider.
+              </Text>
+            )
           ) : (
-            <Text>
-              No bookings available for the selected date and provider.
-            </Text>
-          )
-        ) : (
-          <Text>Loading...</Text>
-        )}
-      </View>
+            <Text>Loading...</Text>
+          )}
+        </View>
+      </ScrollView>
     </View>
   );
 };

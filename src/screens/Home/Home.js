@@ -1,72 +1,83 @@
-import React, { useState } from "react";
-import { View, TextInput, Button } from "react-native";
-import firebase from "@react-native-firebase/app";
-import { initializeApp } from "firebase/app";
-import "@react-native-firebase/auth";
-import { v4 as uuidv4 } from "uuid";
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
-const firebaseConfig = {
-  // Replace with your Firebase project's configuration object
-  apiKey: "AIzaSyCujg142JHu-h9i68_zS5b4Wt-466u1xmM",
-  authDomain: "gizeye-20fa5.firebaseapp.com",
-  projectId: "gizeye-20fa5",
-  storageBucket: "gizeye-20fa5.appspot.com",
-  messagingSenderId: "29032338202",
-  appId: "1:29032338202:web:bc79107d3a2b8965ac12a3",
-  measurementId: "G-CJRE4ZYMWV",
-};
+const ServiceProviderDashboard = () => {
+  const generateGridItems = () => {
+    const rows = 2;
+    const columns = 2;
+    const gridItems = [];
 
-// Check if Firebase is already initialized
-initializeApp(firebaseConfig);
+    for (let i = 0; i < rows; i++) {
+      const rowItems = [];
+      for (let j = 0; j < columns; j++) {
+        const itemContent = (
+          <View key={`item-${i}-${j}`} style={styles.gridItem}>
+            <Text>Grid Item {i * columns + j + 1}</Text>
+            {/* Add your content here, e.g., service provider details */}
+          </View>
+        );
+        rowItems.push(itemContent);
+      }
+      gridItems.push(
+        <View key={`row-${i}`} style={styles.gridRow}>
+          {rowItems}
+        </View>
+      );
+    }
 
-const SignupComponent = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-
-  const handleSignup = () => {
-    firebase
-      .auth()
-      .createUserWithEmailAndPassword(email, password)
-      .then((userInfo) => {
-        console.log(userInfo);
-        const user = firebase.auth().currentUser;
-
-        // Update user profile with displayName
-        user
-          .updateProfile({
-            displayName: displayName.trim(),
-          })
-          .then(() => {
-            console.log("User profile updated successfully");
-            // Additional actions after successful signup
-          })
-          .catch((error) => {
-            console.log("Failed to update user profile:", error);
-          });
-      })
-      .catch((error) => {
-        console.log("Failed to create user:", error);
-      });
+    return gridItems;
   };
 
   return (
-    <View style={{ marginTop: 100 }}>
-      <TextInput placeholder="Email" onChangeText={setEmail} value={email} />
-      <TextInput
-        placeholder="Password"
-        onChangeText={setPassword}
-        value={password}
-        secureTextEntry
-      />
-      <TextInput
-        placeholder="Display Name"
-        onChangeText={setDisplayName}
-        value={displayName}
-      />
-      <Button title="Sign Up" onPress={handleSignup} />
+    <View style={styles.container}>
+      <LinearGradient
+        colors={["#FF6B6B", "#6B6BFF"]} // Set your preferred gradient colors
+        style={styles.gradientBackground}
+      >
+        <View style={styles.header}>
+          <Text style={styles.welcomeText}>Welcome</Text>
+        </View>
+      </LinearGradient>
+      {generateGridItems()}
     </View>
   );
 };
 
-export default SignupComponent;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 10,
+  },
+  gradientBackground: {
+    flex: 1,
+    flexDirection: "row", // Ensure gradient covers the entire left side
+    justifyContent: "flex-start", // Align the gradient to the left
+    alignItems: "center",
+  },
+  header: {
+    flex: 1,
+    padding: 10,
+  },
+  welcomeText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+  },
+  gridRow: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  gridItem: {
+    flex: 1,
+    aspectRatio: 1,
+    borderWidth: 1,
+    borderColor: "gray",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 5,
+  },
+});
+export default ServiceProviderDashboard;

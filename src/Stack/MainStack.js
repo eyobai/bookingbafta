@@ -41,11 +41,11 @@ const MainTab = () => {
 
           // Map each route name to a corresponding icon
           switch (route.name) {
-            case "Home":
-              iconName = "home";
+            case "Clients":
+              iconName = "groups";
               break;
-            case "Search":
-              iconName = "search";
+            case "Notification":
+              iconName = "notifications";
               break;
             case "Appointments":
               iconName = "event";
@@ -70,11 +70,9 @@ const MainTab = () => {
         tabBarInactiveTintColor: "gray",
       })}
     >
-      <Tab.Screen name="Home" component={Home} />
-      <Tab.Screen name="Search" component={Search} />
       <Tab.Screen name="Appointments" component={Appointments} />
-      <Tab.Screen name="Favorites" component={Favorites} />
-      {/*   <Tab.Screen name="Profile" component={Profile} />*/}
+      <Tab.Screen name="Clients" component={Home} />
+      <Tab.Screen name="Notification" component={Search} />
       <Tab.Screen name="Setting" component={Setting} />
     </Tab.Navigator>
   );

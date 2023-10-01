@@ -8,7 +8,9 @@ import {
   StyleSheet,
   FlatList,
 } from "react-native";
+import { Colors } from "react-native/Libraries/NewAppScreen";
 import moment from "moment";
+import COLORS from "../../consts/colors";
 
 const MyComponent = () => {
   const userId = "5EvMBnwPpsbgHFWmpQbyB9klEHr1";
@@ -77,14 +79,13 @@ const MyComponent = () => {
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.title}>Weekdays</Text>
         <WeekdaySelector
           weekDays={weekDays}
           selectedDay={selectedDay}
           handleDaySelect={handleDaySelect}
         />
       </View>
-      <Text style={styles.title}>Service Providers</Text>
+
       <View>
         <ServiceProvidersList
           serviceProviders={serviceProviders}
@@ -125,13 +126,14 @@ const WeekdaySelector = ({ weekDays, selectedDay, handleDaySelect }) => {
         {orderedWeekdays.map((day, index) => {
           const currentDate = moment().add(index, "days");
           const isToday = currentDate.isSame(moment(), "day");
+          const isSelected = day === selectedDay;
 
           return (
             <TouchableOpacity
               key={index}
               style={[
                 styles.weekdayButton,
-                day === selectedDay && styles.selectedDayButton,
+                isSelected && styles.selectedDayButton,
               ]}
               onPress={() => handleDaySelect(day)}
             >
@@ -140,7 +142,7 @@ const WeekdaySelector = ({ weekDays, selectedDay, handleDaySelect }) => {
                   <Text
                     style={[
                       styles.todayText,
-                      day === selectedDay && styles.selectedDayText,
+                      isSelected && styles.selectedDayText,
                     ]}
                   >
                     Today
@@ -149,25 +151,24 @@ const WeekdaySelector = ({ weekDays, selectedDay, handleDaySelect }) => {
                   <Text
                     style={[
                       styles.weekdayText,
-                      day === selectedDay && styles.selectedDayText,
+                      isSelected && styles.selectedDayText,
                       { marginBottom: 10, paddingTop: 6 },
                     ]}
                   >
                     {day}
                   </Text>
                 )}
-
                 <View
                   style={[
                     styles.dayOfMonthCircle,
-                    selectedDay === day && styles.selectedDayCircle,
+                    isSelected && styles.selectedDayCircle,
                     { marginTop: 10 },
                   ]}
                 >
                   <Text
                     style={[
                       styles.dayOfMonthText,
-                      selectedDay === day && styles.selectedDayText,
+                      isSelected && styles.selectedDayNumber, // Apply green color to the selected day number
                     ]}
                   >
                     {currentDate.date()}
@@ -192,12 +193,16 @@ const ServiceProvidersList = ({
   };
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.serviceProviderContainer}
+    >
       {serviceProviders.map((provider, index) => (
         <TouchableOpacity
           key={index}
           style={[
-            styles.serviceProviderContainer,
+            styles.serviceProviderItem,
             provider.serviceProviderId === selectedProviderId &&
               styles.selectedProviderContainer,
           ]}
@@ -207,7 +212,15 @@ const ServiceProvidersList = ({
             source={{ uri: provider.imageUrl }}
             style={styles.serviceProviderImage}
           />
-          <Text style={styles.serviceProviderName}>{provider.name}</Text>
+          <Text
+            style={[
+              styles.serviceProviderName,
+              provider.serviceProviderId === selectedProviderId &&
+                styles.selectedProviderName,
+            ]}
+          >
+            {provider.name}
+          </Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -218,8 +231,8 @@ const BookingList = ({ bookings }) => {
   return (
     <View style={styles.bookingContainer}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Time Slot</Text>
-        <Text style={styles.headerText}>Service</Text>
+        <Text style={styles.timeSlot}>Time Slot</Text>
+        <Text style={styles.service}>Service</Text>
       </View>
       {bookings.map((item, index) => (
         <View key={index} style={styles.bookingItem}>
@@ -234,7 +247,6 @@ const BookingList = ({ bookings }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     padding: 16,
   },
   title: {
@@ -248,6 +260,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   serviceProviderContainer: {
+    marginTop: 20,
+
+    elevation: 2, // Add a subtle shadow effect
+    backgroundColor: COLORS.white, // Add a background color if needed
+    borderRadius: 10, // Customize border radius
+    padding: 5, // Add padding to the group
+    marginBottom: 0,
+  },
+  serviceProviderItem: {
     marginRight: 10,
     alignItems: "center",
     elevation: 2,
@@ -255,19 +276,27 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
+  serviceProvidersContainer: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+    padding: 16,
+  },
   selectedProviderContainer: {
-    backgroundColor: "lightblue", // Add your desired background color
+    backgroundColor: COLORS.primary,
   },
   serviceProviderImage: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
-    marginBottom: 10,
   },
   serviceProviderName: {
     marginTop: 8,
     fontWeight: "bold",
     textAlign: "center",
+  },
+  selectedProviderName: {
+    color: COLORS.white,
   },
   bookingItem: {
     padding: 12,
@@ -278,8 +307,10 @@ const styles = StyleSheet.create({
   },
   weekdaySelector: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    elevation: 2, // Add a subtle shadow effect
+    backgroundColor: COLORS.white,
+    borderRadius: 10, // Customize border radius
     marginBottom: 10,
   },
   weekdayButton: {
@@ -288,7 +319,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   selectedDayButton: {
-    backgroundColor: "blue",
+    backgroundColor: COLORS.primary,
   },
   weekdayText: {
     fontSize: 16,
@@ -301,15 +332,15 @@ const styles = StyleSheet.create({
     width: 25,
     height: 25,
     borderRadius: 12,
-    backgroundColor: "lightblue",
+    backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   selectedDayCircle: {
-    backgroundColor: "pink",
+    backgroundColor: Colors.white,
   },
   dayOfMonthText: {
-    color: "black",
+    color: COLORS.white,
     fontSize: 16,
   },
   dayInfoContainer: {
@@ -318,8 +349,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   todayText: {
-    color: "lightblue",
-    fontSize: 19,
+    color: COLORS.primary,
+    fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
     borderRadius: 8,
@@ -339,7 +370,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 10,
   },
-  headerText: {
+  timeSlot: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
+  },
+  service: {
+    marginRight: 20,
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -351,6 +388,9 @@ const styles = StyleSheet.create({
   },
   bookingText: {
     fontSize: 16,
+  },
+  selectedDayNumber: {
+    color: COLORS.primary, // Apply green color to the selected day number
   },
 });
 

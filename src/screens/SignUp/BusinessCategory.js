@@ -13,7 +13,6 @@ import { getFirestore, doc, updateDoc, getDoc } from "firebase/firestore";
 import { useSelector } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { firebaseConfig } from "../../firebase.config";
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 

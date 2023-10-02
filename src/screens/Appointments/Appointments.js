@@ -6,21 +6,26 @@ import {
   Text,
   Image,
   StyleSheet,
-  FlatList,
   RefreshControl,
 } from "react-native";
-import { Colors } from "react-native/Libraries/NewAppScreen";
 import moment from "moment";
 import COLORS from "../../consts/colors";
-
+import LoadingComponent from "../../components/LoadingComponent";
+import Icon from "react-native-vector-icons/FontAwesome"; // Replace with the actual icon library you are using
+import haircutIcon from "../../assets/Barbershop_assets/haircut.png";
+import haircolorIcon from "../../assets/Barbershop_assets/haircolor.png";
+import { useSelector } from "react-redux";
 const MyComponent = () => {
-  const userId = "5EvMBnwPpsbgHFWmpQbyB9klEHr1";
+  const userId = useSelector((state) => state.user.userId);
   const [serviceProviders, setServiceProviders] = useState([]);
   const [selectedProviderId, setSelectedProviderId] = useState(null);
   const [selectedDate, setSelectedDate] = useState(
     moment().format("DD/MM/YYYY")
   );
   const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const weekDays = [
     "Monday",
     "Tuesday",
@@ -31,10 +36,24 @@ const MyComponent = () => {
     "Sunday",
   ];
 
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(moment().format("dddd"));
+
+  useEffect(() => {
+    // Simulate data fetching or any other loading process
+    setTimeout(() => {
+      setIsLoading(false); // Set isLoading to false when loading is complete
+    }, 3000); // Simulate a 3-second loading time
+  }, []);
+  useEffect(() => {
+    fetchServiceProviders();
+  }, [userId]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [selectedDate, selectedProviderId, userId]);
 
   const handleDaySelect = (day) => {
+    setSelectedDay(day);
     const today = moment().format("dddd");
     const todayIndex = weekDays.indexOf(today);
 
@@ -46,17 +65,12 @@ const MyComponent = () => {
     const formattedDate = currentDate.format("DD/MM/YYYY");
 
     setSelectedDate(formattedDate);
-    setSelectedDay(day);
   };
 
   const onRefresh = () => {
     setRefreshing(true);
-
-    // Replace this with your data fetching logic
     fetchServiceProviders();
     fetchBookings();
-
-    // Simulate refreshing for 1 second
     setTimeout(() => {
       setRefreshing(false);
     }, 1000);
@@ -69,6 +83,10 @@ const MyComponent = () => {
       .then((response) => response.json())
       .then((data) => {
         setServiceProviders(data);
+
+        if (data.length > 0) {
+          setSelectedProviderId(data[0].serviceProviderId);
+        }
       })
       .catch((error) =>
         console.error("Error fetching service providers:", error)
@@ -78,7 +96,7 @@ const MyComponent = () => {
   const fetchBookings = () => {
     if (selectedDate && selectedProviderId && userId) {
       fetch(
-        `http://192.168.1.7:3001/fetchBooking?businessOwnerId=${userId}&selectedCalendar=${selectedDate}&serviceProviderId=${selectedProviderId}`
+        `http://192.168.0.8:3001/fetchBooking?businessOwnerId=${userId}&selectedCalendar=${selectedDate}&serviceProviderId=${selectedProviderId}`
       )
         .then((response) => response.json())
         .then((data) => {
@@ -89,51 +107,50 @@ const MyComponent = () => {
     }
   };
 
-  useEffect(() => {
-    fetchServiceProviders();
-  }, [userId]);
-
-  useEffect(() => {
-    fetchBookings();
-  }, [selectedDate, selectedProviderId, userId]);
-
   return (
     <View style={styles.container}>
-      <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View>
-          <WeekdaySelector
-            weekDays={weekDays}
-            selectedDay={selectedDay}
-            handleDaySelect={handleDaySelect}
-          />
-        </View>
-
-        <View>
-          <ServiceProvidersList
-            serviceProviders={serviceProviders}
-            setSelectedProviderId={setSelectedProviderId}
-            selectedProviderId={selectedProviderId}
-          />
-        </View>
-        <View>
-          <Text style={styles.title}>Bookings</Text>
-          {bookings !== null ? (
-            bookings.length > 0 ? (
-              <BookingList bookings={bookings} />
-            ) : (
-              <Text>
-                No bookings available for the selected date and provider.
+      {isLoading ? (
+        <LoadingComponent /> // Display the loading screen while isLoading is true
+      ) : (
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View>
+            <WeekdaySelector
+              weekDays={weekDays}
+              selectedDay={selectedDay}
+              handleDaySelect={handleDaySelect}
+            />
+            <ServiceProvidersList
+              serviceProviders={serviceProviders}
+              setSelectedProviderId={setSelectedProviderId}
+              selectedProviderId={selectedProviderId}
+            />
+            <Text style={styles.title}>
+              <Text style={styles.bookOnText}>
+                {selectedDay === moment().format("dddd")
+                  ? "Today's "
+                  : selectedDay}
               </Text>
-            )
-          ) : (
-            <Text>Loading...</Text>
-          )}
-        </View>
-      </ScrollView>
+              <Text style={styles.titleText}> - Bookings </Text>
+            </Text>
+
+            {bookings !== null ? (
+              bookings.length > 0 ? (
+                <BookingList bookings={bookings} />
+              ) : (
+                <Text>
+                  No bookings available for the selected date and provider.
+                </Text>
+              )
+            ) : (
+              <Text>Loading...</Text>
+            )}
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -153,7 +170,8 @@ const WeekdaySelector = ({ weekDays, selectedDay, handleDaySelect }) => {
         {orderedWeekdays.map((day, index) => {
           const currentDate = moment().add(index, "days");
           const isToday = currentDate.isSame(moment(), "day");
-          const isSelected = day === selectedDay;
+          const isSelected =
+            day === selectedDay || (isToday && selectedDay === null);
 
           return (
             <TouchableOpacity
@@ -195,7 +213,7 @@ const WeekdaySelector = ({ weekDays, selectedDay, handleDaySelect }) => {
                   <Text
                     style={[
                       styles.dayOfMonthText,
-                      isSelected && styles.selectedDayNumber, // Apply green color to the selected day number
+                      isSelected && styles.selectedDayNumber,
                     ]}
                   >
                     {currentDate.date()}
@@ -255,16 +273,31 @@ const ServiceProvidersList = ({
 };
 
 const BookingList = ({ bookings }) => {
+  const sortedBookings = [...bookings].sort((a, b) => {
+    const timeSlotA = a.selectedTimeSlot;
+    const timeSlotB = b.selectedTimeSlot;
+    return timeSlotA.localeCompare(timeSlotB);
+  });
+  const serviceToImage = {
+    Hair_Cut: haircutIcon,
+    Hair_color: haircolorIcon, // Replace with the actual icon names
+    // Add more service types and corresponding icons here
+  };
   return (
     <View style={styles.bookingContainer}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.timeSlot}>Time Slot</Text>
-        <Text style={styles.service}>Service</Text>
-      </View>
-      {bookings.map((item, index) => (
+      {sortedBookings.map((item, index) => (
         <View key={index} style={styles.bookingItem}>
           <Text style={styles.bookingText}>{item.selectedTimeSlot}</Text>
-          <Text style={styles.bookingText}>{item.services}</Text>
+          <View style={styles.iconContainer}>
+            {serviceToImage[item.services] ? (
+              <Image
+                source={serviceToImage[item.services]} // Use the custom image asset
+                style={{ width: 20, height: 20 }} // Add a custom style if needed
+              />
+            ) : (
+              <Text>{item.services}</Text>
+            )}
+          </View>
         </View>
       ))}
     </View>
@@ -280,6 +313,15 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginTop: 16,
+    textAlign: "center", // Center the text horizontally
+  },
+  titleText: {
+    color: COLORS.primary, // Use your preferred color
+  },
+  bookOnText: {
+    color: COLORS.orange, // Use your preferred color
+    fontSize: 24, // Adjust the font size
+    marginLeft: 5, // Add spacing between "Bookon on" and the selected day
   },
   selectedProviderName: {
     fontSize: 16,
@@ -288,12 +330,12 @@ const styles = StyleSheet.create({
   },
   serviceProviderContainer: {
     marginTop: 20,
-
-    elevation: 2, // Add a subtle shadow effect
-    backgroundColor: COLORS.white, // Add a background color if needed
-    borderRadius: 10, // Customize border radius
-    padding: 5, // Add padding to the group
+    elevation: 2,
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 5,
     marginBottom: 0,
+    height: 105, //service provider container height
   },
   serviceProviderItem: {
     marginRight: 10,
@@ -327,7 +369,6 @@ const styles = StyleSheet.create({
   },
   bookingItem: {
     padding: 12,
-    borderBottomWidth: 1,
   },
   bookingText: {
     fontSize: 16,
@@ -335,9 +376,9 @@ const styles = StyleSheet.create({
   weekdaySelector: {
     flexDirection: "row",
     alignItems: "center",
-    elevation: 2, // Add a subtle shadow effect
+    elevation: 2,
     backgroundColor: COLORS.white,
-    borderRadius: 10, // Customize border radius
+    borderRadius: 10,
     marginBottom: 10,
   },
   weekdayButton: {
@@ -353,7 +394,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   selectedDayText: {
-    color: "white",
+    color: COLORS.white,
   },
   dayOfMonthCircle: {
     width: 25,
@@ -364,7 +405,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   selectedDayCircle: {
-    backgroundColor: Colors.white,
+    backgroundColor: COLORS.white,
   },
   dayOfMonthText: {
     color: COLORS.white,
@@ -385,8 +426,6 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   bookingContainer: {
-    elevation: 2,
-    backgroundColor: "white",
     borderRadius: 10,
     marginTop: 10,
     padding: 10,
@@ -410,14 +449,18 @@ const styles = StyleSheet.create({
   bookingItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 18,
-    borderBottomWidth: 1,
-  },
-  bookingText: {
-    fontSize: 16,
+    elevation: 2, // Add a subtle shadow effect
+    backgroundColor: COLORS.white, // Add a background color if needed
+    borderRadius: 10, // Customize border radius
+    marginTop: 10,
+    padding: 10,
+    marginBottom: 2,
   },
   selectedDayNumber: {
-    color: COLORS.primary, // Apply green color to the selected day number
+    color: COLORS.primary,
+  },
+  iconContainer: {
+    marginRight: 10, // Add any spacing or styling you prefer
   },
 });
 

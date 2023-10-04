@@ -11,6 +11,7 @@ import axios from "axios";
 import { Picker } from "@react-native-picker/picker"; // Updated import
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
+import COLORS from "../../consts/colors";
 
 const ServiceForm = () => {
   const [serviceName, setServiceName] = useState("");
@@ -48,7 +49,7 @@ const ServiceForm = () => {
         return;
       }
 
-      const response = await axios.post(`http://192.168.1.2:3001/addServices`, {
+      const response = await axios.post(`http://server.bafta.co/addServices`, {
         userId,
         services,
       });
@@ -102,7 +103,7 @@ const ServiceForm = () => {
         style={styles.logButton}
         onPress={addServicesToFirestore}
       >
-        <Text style={styles.logButtonText}>Add Services to Firestore</Text>
+        <Text style={styles.logButtonText}>Next</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   logButton: {
-    backgroundColor: "green",
+    backgroundColor: COLORS.primary,
     padding: 10,
     alignItems: "center",
     justifyContent: "center",

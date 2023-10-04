@@ -18,8 +18,8 @@ function BusinessNameandName() {
   const [name, setName] = useState("");
   const navigation = useNavigation();
   const { showBanner } = useInternetConnectivity();
-  const userId = useSelector((state) => state.user.userId);
-
+  // const userId = useSelector((state) => state.user.userId);'
+  const userId = "W2H3CAZTiSbD0dCgqCVeQTkhrYH3";
   const [businessName, setBusinessName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -44,19 +44,14 @@ function BusinessNameandName() {
       };
       console.log(name, businessName, location);
       // Make a POST request to your Express.js API to store user information
-      const response = await fetch(
-        `https://server.bafta.co/register/${userId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name, businessName, location }),
-        }
-      );
+      const response = await axios.post(`http://localhost:3001/register/1234`, {
+        name,
+        businessName,
+        location,
+      });
 
       // Check the response and handle success/failure as needed
-      if (response.status === 200) {
+      if (response.status === 201) {
         console.log("User information stored successfully");
         navigation.navigate("BusinessCategory");
       } else {

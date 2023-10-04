@@ -20,6 +20,7 @@ import DayList from "../screens/DayList/DayList";
 import UploadImage from "../screens/ImageUpload/ImageUpload";
 import Congratulations from "../screens/FinalPage/FinalPage";
 import ManageServiceProviders from "../screens/AddServiceProviders/ManageServiceProviders";
+import RegisterbyPhoneNumber from "../screens/SignUp/RegisterbyPhoneNumber";
 // Create a stack navigator
 import AddressForm from "../screens/AddressForm";
 import DisplayAddress from "../screens/DisplayAddress";
@@ -112,6 +113,10 @@ const MainStack = () => {
         component={ServiceProviderImageUpload}
       />
       <Stack.Screen name="serviceSetup" component={ServiceSetup} />
+      <Stack.Screen
+        name="RegisterbyPhoneNumber"
+        component={RegisterbyPhoneNumber}
+      />
     </Stack.Navigator>
   );
 };

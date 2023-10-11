@@ -11,7 +11,9 @@ const ImageUpload = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
   const userId = useSelector((state) => state.user.userId);
+  //const userId = "fVmkmEVXOITvHukz6x9zdHQzNDm1";
   const serviceProviderId = useSelector((state) => state.employee.employeeId);
+  //const serviceProviderId = "CHa9RjR6ZhOLsWs1650t1fDtKYw1";
   useEffect(() => {
     (async () => {
       const { status } =
@@ -60,7 +62,7 @@ const ImageUpload = () => {
     });
 
     try {
-      const response = await fetch("http://192.168.0.6:3001/uploadImage", {
+      const response = await fetch("https://server.bafta.co/uploadImage", {
         method: "POST",
         body: data,
       });

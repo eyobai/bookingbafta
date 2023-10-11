@@ -77,9 +77,7 @@ const MyComponent = () => {
   };
 
   const fetchServiceProviders = () => {
-    fetch(
-      `http://server.bafta.co/users/TMugCo4XGRQa8kmXEXJejTlSWUh1/serviceProviders`
-    )
+    fetch(`http://server.bafta.co/users/${userId}/serviceProviders`)
       .then((response) => response.json())
       .then((data) => {
         setServiceProviders(data);
@@ -96,7 +94,7 @@ const MyComponent = () => {
   const fetchBookings = () => {
     if (selectedDate && selectedProviderId && userId) {
       fetch(
-        `http://192.168.0.8:3001/fetchBooking?businessOwnerId=${userId}&selectedCalendar=${selectedDate}&serviceProviderId=${selectedProviderId}`
+        `https://server.bafta.co/fetchBooking?businessOwnerId=${userId}&selectedCalendar=${selectedDate}&serviceProviderId=${selectedProviderId}`
       )
         .then((response) => response.json())
         .then((data) => {

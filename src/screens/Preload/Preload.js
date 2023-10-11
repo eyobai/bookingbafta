@@ -10,10 +10,9 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
+import COLORS from "../../consts/colors";
 
 const { width, height } = Dimensions.get("window");
-
-const COLORS = { primary: "#282534", white: "#fff" };
 
 const slides = [
   {
@@ -201,11 +200,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: "center",
   },
-  image: {
-    height: "100%",
-    width: "100%",
-    resizeMode: "contain",
-  },
+
   indicator: {
     height: 2.5,
     width: 10,

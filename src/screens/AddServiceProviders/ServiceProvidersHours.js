@@ -12,8 +12,9 @@ const ServiceProviderHours = () => {
   const [isAllSet, setIsAllSet] = useState(false);
 
   const userId = useSelector((state) => state.user.userId);
+  //const userId = "fVmkmEVXOITvHukz6x9zdHQzNDm1";
   const serviceProviderId = useSelector((state) => state.employee.employeeId);
-
+  //const serviceProviderId = "CHa9RjR6ZhOLsWs1650t1fDtKYw1";
   console.log(
     "User ID from Redux:",
     useSelector((state) => state.user.userId)
@@ -59,7 +60,7 @@ const ServiceProviderHours = () => {
 
         // Send a POST request to your server route
         const response = await axios.post(
-          "http://192.168.0.6:3001/setWorkingHours",
+          "https://server.bafta.co/setWorkingHours",
           requestData
         );
 

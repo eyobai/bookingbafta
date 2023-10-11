@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  Image,
+  ActivityIndicator,
 } from "react-native";
 import { initializeApp } from "firebase/app";
 import {
@@ -34,6 +36,9 @@ const RegisterbyPhoneNumber = ({ setUserId }) => {
   const [verificationId, setVerificationID] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [info, setInfo] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState("");
+  const [isLoadingVerify, setIsLoadingVerify] = useState(false);
 
   const [resendActive, setResendActive] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
@@ -45,18 +50,18 @@ const RegisterbyPhoneNumber = ({ setUserId }) => {
   const savePhoneNumberToFirestore = async (user, phoneNumber) => {
     try {
       const db = getFirestore();
-      const userDocRef = doc(db, "userss", user.uid);
+      const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, { phoneNumber }, { merge: true });
       console.log("Phone number saved to Firestore");
     } catch (error) {
       console.error("Error saving phone number to Firestore:", error);
     }
   };
-
   const handleSendVerificationCode = async () => {
     try {
-      const fullPhoneNumber = selectedCountry + phoneNumber;
+      setIsLoading(true); // Set loading state to true
 
+      const fullPhoneNumber = selectedCountry + phoneNumber;
       const phoneProvider = new PhoneAuthProvider(auth);
       const verificationId = await phoneProvider.verifyPhoneNumber(
         fullPhoneNumber,
@@ -72,21 +77,24 @@ const RegisterbyPhoneNumber = ({ setUserId }) => {
 
       setTimeout(() => {
         setResendActive(false);
+        setIsLoading(false); // Set loading state to false
         clearInterval(interval);
         setResendTimer(60);
       }, 60000);
     } catch (error) {
       setInfo(`Error: ${error.message}`);
+      setIsLoading(false); // Set loading state to false on error
     }
   };
 
   const handleVerifyVerificationCode = async () => {
     try {
+      setIsLoadingVerify(true); // Set loading state to true
+
       const credential = PhoneAuthProvider.credential(
         verificationId,
-        verificationCode
+        confirmationCode
       );
-
       const userCredential = await signInWithCredential(auth, credential);
       const user = userCredential.user;
       console.log(user.uid);
@@ -97,14 +105,23 @@ const RegisterbyPhoneNumber = ({ setUserId }) => {
       navigation.navigate("AboutYou");
     } catch (error) {
       setInfo(`Error: ${error.message}`);
+    } finally {
+      setIsLoadingVerify(false); // Set loading state to false
     }
   };
 
+  const alreadyRegisterd = () => {
+    navigation.navigate("SignIn");
+  };
   return (
     <View style={styles.container}>
       <FirebaseRecaptchaVerifierModal
         ref={recaptchaVerifier}
         firebaseConfig={fbConfig}
+      />
+      <Image
+        source={require("../../assets/bafta_logo.png")}
+        style={styles.logo}
       />
       {info && (
         <View style={styles.infoContainer}>
@@ -126,12 +143,33 @@ const RegisterbyPhoneNumber = ({ setUserId }) => {
           </View>
 
           <TouchableOpacity
-            style={styles.sendVerificationCode}
+            style={
+              phoneNumber
+                ? styles.sendVerificationCode
+                : styles.sendVerificationCodeDisabled
+            }
             onPress={handleSendVerificationCode}
             disabled={!phoneNumber || resendActive}
           >
-            <Text style={styles.sendVerificationCodeText}>Next</Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.sendVerificationCodeText}>Next</Text>
+            )}
           </TouchableOpacity>
+
+          <View
+            style={{
+              flexDirection: "row",
+              marginTop: 20,
+              alignSelf: "center",
+            }}
+          >
+            <Text style={styles.loginText}> Not registered yet? </Text>
+            <TouchableOpacity onPress={alreadyRegisterd}>
+              <Text style={styles.loginLink}>Login here</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <View>
@@ -140,15 +178,21 @@ const RegisterbyPhoneNumber = ({ setUserId }) => {
             style={styles.verificationCodeInput}
             editable={!!verificationId}
             placeholder="123456"
-            onChangeText={setVerificationCode}
+            onChangeText={(text) => setConfirmationCode(text)}
           />
+
           <TouchableOpacity
-            style={styles.sendVerificationCode}
-            disabled={!verificationCode}
+            style={
+              confirmationCode
+                ? styles.sendVerificationCode
+                : styles.sendVerificationCodeDisabled
+            }
             onPress={handleVerifyVerificationCode}
+            disabled={!confirmationCode}
           >
             <Text style={styles.sendVerificationCodeText}>Verify</Text>
           </TouchableOpacity>
+
           {resendActive ? (
             <TouchableOpacity disabled>
               <Text style={styles.sendVerificationCodeText}>
@@ -177,6 +221,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  logo: {
+    width: 100,
+    height: 100,
+
+    marginBottom: 40,
+  },
   text: {
     color: COLORS.primary,
     fontSize: 18,
@@ -203,6 +253,13 @@ const styles = StyleSheet.create({
   sendVerificationCode: {
     marginTop: 20,
     backgroundColor: COLORS.primary,
+    padding: 16,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  sendVerificationCodeDisabled: {
+    marginTop: 20,
+    backgroundColor: "gray",
     padding: 16,
     alignItems: "center",
     borderRadius: 10,
@@ -242,6 +299,16 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     textAlign: "center", // Center text horizontally
+  },
+  loginLink: {
+    color: "#003f5c",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  loginText: {
+    color: "black",
+
+    fontSize: 16,
   },
 });
 

@@ -49,7 +49,7 @@ const ServiceForm = () => {
         return;
       }
 
-      const response = await axios.post(`http://server.bafta.co/addServices`, {
+      const response = await axios.post(`https://server.bafta.co/addServices`, {
         userId,
         services,
       });
@@ -99,12 +99,6 @@ const ServiceForm = () => {
       <TouchableOpacity style={styles.addButton} onPress={addService}>
         <Text style={styles.addButtonText}>Add Service</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.logButton}
-        onPress={addServicesToFirestore}
-      >
-        <Text style={styles.logButtonText}>Next</Text>
-      </TouchableOpacity>
 
       <FlatList
         data={services}
@@ -119,6 +113,12 @@ const ServiceForm = () => {
           </View>
         )}
       />
+      <TouchableOpacity
+        style={styles.logButton}
+        onPress={addServicesToFirestore}
+      >
+        <Text style={styles.logButtonText}>Next</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     overflow: "hidden", // Clip the dropdown options if they exceed the container's boundaries
   },
   addButton: {
-    backgroundColor: "blue",
+    backgroundColor: COLORS.secondary,
     padding: 10,
     alignItems: "center",
     justifyContent: "center",

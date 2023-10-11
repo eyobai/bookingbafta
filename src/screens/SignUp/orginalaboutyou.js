@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { connect, useSelector } from "react-redux";
+import { connect } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import useInternetConnectivity from "../../components/useInternetConnectivity";
 import {
@@ -15,89 +15,96 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { firebaseConfig } from "../../firebase.config";
+import { firebaseConfig } from "../../firebase";
 import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  collection,
-  setDoc,
-  doc,
-  set,
-  getDoc,
-} from "firebase/firestore";
-import { setEmployeeId } from "../../redux/employeeStore";
+import { getFirestore, collection, setDoc, doc, set } from "firebase/firestore";
+import { setUserId } from "../../redux/store";
+import * as Location from "expo-location";
 
-const RegisterScreen = ({ setEmployeeId }) => {
+const RegisterScreen = ({ setUserId }) => {
   const navigation = useNavigation();
   const { showBanner } = useInternetConnectivity();
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const adminId = useSelector((state) => state.user.userId);
-  //const adminId = "fVmkmEVXOITvHukz6x9zdHQzNDm1";
+
   const app = initializeApp(firebaseConfig);
   const firestore = getFirestore();
-  console.log(adminId);
 
   const handleRegister = async () => {
     const auth = getAuth();
     const db = getFirestore(app);
 
+    if (!email || !password || !confirmPassword) {
+      setErrorMessage("Please fill in all fields.");
+      setIsLoading(false); // Set loading state to false
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      setIsLoading(false); // Set loading state to false
+      return;
+    }
+
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+
+    // Check if the email matches the regular expression
+    if (!emailRegex.test(email)) {
+      setErrorMessage("Email is not correct");
+      setIsLoading(false); // Set loading state to false
+      return;
+    }
+
     setIsLoading(true);
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(async (userCredential) => {
+        // User registration successful
+        const user = userCredential.user;
+        const userDocRef = doc(db, "users", user.uid);
+        setUserId(user.uid); // Dispatch the action to update the userId in Redux store
 
-    // Create a new employee user with email and password
-    const employeeCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    const serviceProviderId = employeeCredential.user.uid;
-    console.log(`employee id ${serviceProviderId}`);
-    // Create a reference to the user's Firestore document using their ID
-    const userDocRef = doc(db, "users", adminId);
+        // Save the user's email, location, and other details in Firestore
+        setDoc(userDocRef, { email, phone, businessName, name })
+          .then(() => {
+            console.log("User registered and data saved in Firestore:", user);
+          })
+          .catch((error) => {
+            console.error("Error saving data in Firestore:", error);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
 
-    // Fetch the existing data in the document
-    const userDocSnapshot = await getDoc(userDocRef);
-
-    // Get the current data or initialize an empty object if it doesn't exist
-    const existingUserData = userDocSnapshot.exists()
-      ? userDocSnapshot.data()
-      : {};
-
-    // Get the current employees array or initialize an empty array if it doesn't exist
-    const existingEmployees = existingUserData.employees || [];
-
-    // Create a new employee object
-    const newEmployee = {
-      email,
-      phone,
-      name,
-      serviceProviderId,
-      // Add any other employee data you want to store here
-    };
-
-    // Merge the new employee data with the existing employees array
-    const updatedEmployees = [...existingEmployees, newEmployee];
-
-    // Update the Firestore document with the updated employees array
-    setDoc(userDocRef, { ...existingUserData, employees: updatedEmployees })
-      .then(() => {
-        console.log("User registered and employee data saved in Firestore:");
+        navigation.navigate("BusinessCategory");
       })
       .catch((error) => {
-        console.error("Error saving data in Firestore:", error);
-      })
-      .finally(() => {
+        console.error("Error registering user:", error);
         setIsLoading(false);
+        if (error.code === "auth/email-already-in-use") {
+          Alert.alert(
+            "User Already Exists",
+            "The email address is already registered. Please login instead.",
+            [
+              {
+                text: "OK",
+                onPress: () => navigation.navigate("SignIn"),
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            "Registration Error",
+            "An error occurred during registration. Please try again later."
+          );
+        }
       });
-
-    setEmployeeId(serviceProviderId); // Dispatch the action to update the userId in Redux store
-    navigation.navigate("workingHours");
   };
 
   const AlreadyRegistered = () => {
@@ -111,7 +118,7 @@ const RegisterScreen = ({ setEmployeeId }) => {
           source={require("../../assets/bafta_logo.png")}
           style={styles.logo}
         />
-        <Text style={styles.title}>Service Provider account</Text>
+        <Text style={styles.title}>Create an account</Text>
       </View>
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center" }}>
@@ -129,7 +136,12 @@ const RegisterScreen = ({ setEmployeeId }) => {
           value={phone}
           onChangeText={setPhone}
         />
-
+        <TextInput
+          style={styles.input}
+          placeholder="Business Name"
+          value={businessName}
+          onChangeText={setBusinessName}
+        />
         <TextInput
           style={styles.input}
           placeholder="Name"
@@ -261,7 +273,7 @@ const styles = StyleSheet.create({
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    setEmployeeId: (userId) => dispatch(setEmployeeId(userId)),
+    setUserId: (userId) => dispatch(setUserId(userId)),
   };
 };
 

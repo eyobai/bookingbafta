@@ -18,6 +18,11 @@ import fbConfig from "../../firebase";
 import { useNavigation } from "@react-navigation/native";
 import COLORS from "../../consts/colors";
 
+// Import Redux related functions
+import { connect } from "react-redux";
+
+import { setUserId } from "../../redux/store";
+
 try {
   initializeApp(fbConfig);
 } catch (error) {
@@ -26,7 +31,7 @@ try {
 
 const auth = getAuth();
 
-const LoginByPhoneNumber = () => {
+const LoginByPhoneNumber = ({ setUserId }) => {
   const [selectedCountry, setSelectedCountry] = useState("+251");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [verificationId, setVerificationID] = useState("");
@@ -65,10 +70,17 @@ const LoginByPhoneNumber = () => {
       const user = userCredential.user;
       console.log(user.uid);
       setInfo("Success: Phone authentication successful");
-      navigation.navigate("Home"); // Change "Home" to the appropriate screen name.
+
+      // Dispatch the user ID to the Redux store
+      setUserId(user.uid);
+
+      navigation.navigate("Main"); // Change "Main" to the appropriate screen name.
     } catch (error) {
       setInfo(`Error: ${error.message}`);
     }
+  };
+  const notRegistered = () => {
+    navigation.navigate("RegisterbyPhoneNumber");
   };
 
   return (
@@ -104,8 +116,20 @@ const LoginByPhoneNumber = () => {
             onPress={handleSendVerificationCode}
             disabled={!phoneNumber}
           >
-            <Text style={styles.buttonText}>Next</Text>
+            <Text style={styles.buttonText}>Send Verification Code</Text>
           </TouchableOpacity>
+          <View
+            style={{
+              flexDirection: "row",
+              marginTop: 20,
+              alignSelf: "center",
+            }}
+          >
+            <Text style={styles.registerText}> Not registered yet? </Text>
+            <TouchableOpacity onPress={notRegistered}>
+              <Text style={styles.registerLink}>Register here</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <View>
@@ -138,10 +162,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 150,
     marginBottom: 20,
-    marginBottom: 80,
   },
   headerText: {
     color: COLORS.primary,
@@ -203,6 +226,23 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     textAlign: "center",
   },
+  registerLink: {
+    color: "#003f5c",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  registerText: {
+    color: "black",
+
+    fontSize: 16,
+  },
 });
 
-export default LoginByPhoneNumber;
+// Connect the component to Redux
+const mapDispatchToProps = (dispatch) => {
+  return {
+    setUserId: (userId) => dispatch(setUserId(userId)), // Dispatch the action
+  };
+};
+
+export default connect(null, mapDispatchToProps)(LoginByPhoneNumber);

@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, Image, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  ProgressBarAndroid,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useSelector } from "react-redux";
+import COLORS from "../../consts/colors";
+import Modal from "react-native-modal";
+import { useNavigation } from "@react-navigation/native";
 
 const desiredImageWidth = 340;
 const desiredImageHeight = 200;
@@ -11,9 +23,10 @@ const ImageUpload = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
   const userId = useSelector((state) => state.user.userId);
-  //const userId = "fVmkmEVXOITvHukz6x9zdHQzNDm1";
   const serviceProviderId = useSelector((state) => state.employee.employeeId);
-  //const serviceProviderId = "CHa9RjR6ZhOLsWs1650t1fDtKYw1";
+  const [isModalVisible, setModalVisible] = useState(false);
+  const navigation = useNavigation();
+
   useEffect(() => {
     (async () => {
       const { status } =
@@ -41,6 +54,7 @@ const ImageUpload = () => {
       setImageURI(result.assets[0].uri);
     }
   };
+
   const uploadImage = async () => {
     if (!imageURI) {
       Alert.alert("No image selected", "Please select an image to upload.");
@@ -50,17 +64,22 @@ const ImageUpload = () => {
     const data = new FormData();
     data.append("userId", userId);
     data.append("serviceProviderId", serviceProviderId);
-
-    // Log the userId and serviceProviderId for debugging
-    console.log("userId:", userId);
-    console.log("serviceProviderId:", serviceProviderId);
-
     data.append("image", {
       name: "image.jpg",
       type: "image/jpeg",
       uri: imageURI,
     });
-
+    // Simulate the progress
+    setUploadProgress(0);
+    const uploadInterval = setInterval(() => {
+      setUploadProgress((prevProgress) => {
+        if (prevProgress >= 100) {
+          clearInterval(uploadInterval);
+          return 100;
+        }
+        return prevProgress + 10;
+      });
+    }, 1000); // Update every second
     try {
       const response = await fetch("https://server.bafta.co/uploadImage", {
         method: "POST",
@@ -68,11 +87,10 @@ const ImageUpload = () => {
       });
 
       if (response.ok) {
-        // Image uploaded successfully
-        Alert.alert("Success", "Image uploaded successfully.");
-        setImageURI(null); // Clear the selected image
+        setModalVisible(true);
+        setImageURI(null);
+        setUploadProgress(100); // Set progress to 100% when upload is completed
       } else {
-        // Handle the case where the server returns an error
         const responseData = await response.json();
         Alert.alert("Error", responseData.error);
       }
@@ -82,37 +100,74 @@ const ImageUpload = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+  const CustomProgressBar = ({ progress }) => (
+    <View style={styles.progressBarContainer}>
+      <View style={[styles.progressBar, { width: `${progress}%` }]} />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <View style={styles.imageContainer}>
-        <View style={styles.dottedBox} />
-
-        {imageURI && (
-          <>
-            <Image
-              source={{ uri: imageURI }}
-              style={styles.image}
-              resizeMode="contain"
-            />
-          </>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.imageContainer}>
+          <View style={styles.dottedBox} />
+          {imageURI && (
+            <>
+              <Image
+                source={{ uri: imageURI }}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            </>
+          )}
+        </View>
+        {imageURI ? (
+          <TouchableOpacity style={styles.button} onPress={selectImage}>
+            <Text style={styles.buttonText}>Change Image</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.button} onPress={selectImage}>
+            <Text style={styles.buttonText}>Select Image</Text>
+          </TouchableOpacity>
         )}
-      </View>
-      <Button title="Select Image" onPress={selectImage} />
-      <Button title="Upload Image" onPress={uploadImage} disabled={!imageURI} />
-
-      {uploadProgress > 0 && (
-        <Text
-          style={styles.progressText}
-        >{`Uploading: ${uploadProgress}%`}</Text>
+        {/* Progress Bar */}
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <CustomProgressBar progress={uploadProgress} />
+        )}
+      </ScrollView>
+      {imageURI && (
+        <TouchableOpacity style={styles.uploadButton} onPress={uploadImage}>
+          <Text style={styles.boldButtonText}>Upload Image</Text>
+        </TouchableOpacity>
       )}
+
+      {/* Success Modal */}
+      <Modal isVisible={isModalVisible} onBackdropPress={closeModal}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalText}>Image uploaded successfully!</Text>
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={() => {
+              navigation.navigate("Appointment");
+              closeModal();
+            }}
+          >
+            <Text style={styles.modalButtonText}>Go to Appointments</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.modalButton2}
+            onPress={() => {
+              navigation.navigate("ManageServiceProviders");
+              closeModal();
+            }}
+          >
+            <Text style={styles.modalButtonText}>Add Service Provider</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -120,6 +175,11 @@ const ImageUpload = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -143,8 +203,72 @@ const styles = StyleSheet.create({
     borderColor: "black",
     borderRadius: 5,
   },
-  progressText: {
+  button: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 0,
+    marginVertical: 0,
+    width: "100%",
+  },
+  buttonText: {
+    color: "#FFF",
+    textAlign: "center",
+  },
+  uploadButton: {
+    backgroundColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 0,
+    marginVertical: 0,
+    width: "100%",
+  },
+  boldButtonText: {
+    color: COLORS.white,
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  // Custom progress bar styles
+  progressBarContainer: {
+    width: "100%",
+    height: 10,
+    backgroundColor: "#ccc",
+    borderRadius: 5,
     marginTop: 10,
+  },
+  progressBar: {
+    height: "100%",
+    backgroundColor: COLORS.primary, // Progress bar color
+    borderRadius: 5,
+  },
+  // Styles for the success modal
+  modalContainer: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 10,
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 5,
+    width: "100%",
+    marginVertical: 10,
+  },
+  modalButton2: {
+    backgroundColor: COLORS.secondary,
+    padding: 10,
+    borderRadius: 5,
+    width: "100%",
+    marginVertical: 10,
+  },
+  modalButtonText: {
+    color: COLORS.white,
+    textAlign: "center",
+    fontWeight: "bold",
   },
 });
 

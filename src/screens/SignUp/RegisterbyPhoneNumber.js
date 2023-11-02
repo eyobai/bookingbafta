@@ -51,12 +51,22 @@ const RegisterbyPhoneNumber = ({ setUserId }) => {
     try {
       const db = getFirestore();
       const userDocRef = doc(db, "users", user.uid);
-      await setDoc(userDocRef, { phoneNumber }, { merge: true });
-      console.log("Phone number saved to Firestore");
+
+      // Define the user data, including the phone number and default role.
+      const userData = {
+        phoneNumber: phoneNumber,
+        role: "owner", // Set the default role to "owner"
+      };
+
+      // Use the `setDoc` method to save the user data to Firestore.
+      await setDoc(userDocRef, userData, { merge: true });
+
+      console.log("Phone number and role saved to Firestore");
     } catch (error) {
-      console.error("Error saving phone number to Firestore:", error);
+      console.error("Error saving phone number and role to Firestore:", error);
     }
   };
+
   const handleSendVerificationCode = async () => {
     try {
       setIsLoading(true); // Set loading state to true

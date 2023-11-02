@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Assuming you have installed the @expo/vector-icons package
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 const menus = [
   {
     title: "Manage Service Providers",
-    goTo:"ManageServiceProviders",
+    goTo: "ManageServiceProviders",
     description: "Manage your salon service providers",
     icon: "people",
   },
@@ -54,7 +54,11 @@ function SettingScreen({ navigation }) {
         },
         {
           text: "Yes",
-          onPress: () => navigation.navigate("SignIn"), // Replace "SignIn" with the appropriate screen name
+          onPress: async () => {
+            // Clear the user session and remove user data from AsyncStorage
+            await AsyncStorage.removeItem("userId");
+            navigation.navigate("SignIn");
+          },
         },
       ],
       { cancelable: false }
@@ -68,7 +72,11 @@ function SettingScreen({ navigation }) {
         <TouchableOpacity
           style={styles.menuItem}
           key={index}
-         onPress={() => (menu.title === "Sign Out" ? handleSignOut() : navigation.navigate(menu.goTo))}
+          onPress={() =>
+            menu.title === "Sign Out"
+              ? handleSignOut()
+              : navigation.navigate(menu.goTo)
+          }
         >
           <View style={styles.menuItemInner}>
             <Ionicons

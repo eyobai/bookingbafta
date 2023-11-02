@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,11 +17,9 @@ import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
 import fbConfig from "../../firebase";
 import { useNavigation } from "@react-navigation/native";
 import COLORS from "../../consts/colors";
-
-// Import Redux related functions
 import { connect } from "react-redux";
-
 import { setUserId } from "../../redux/store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 try {
   initializeApp(fbConfig);
@@ -46,7 +44,6 @@ const LoginByPhoneNumber = ({ setUserId }) => {
   const handleSendVerificationCode = async () => {
     try {
       const fullPhoneNumber = selectedCountry + phoneNumber;
-
       const phoneProvider = new PhoneAuthProvider(auth);
       const verificationId = await phoneProvider.verifyPhoneNumber(
         fullPhoneNumber,
@@ -65,23 +62,33 @@ const LoginByPhoneNumber = ({ setUserId }) => {
         verificationId,
         verificationCode
       );
-
       const userCredential = await signInWithCredential(auth, credential);
       const user = userCredential.user;
-      console.log(user.uid);
+
+      // Save the user's ID in AsyncStorage
+      await AsyncStorage.setItem("userId", user.uid);
+
       setInfo("Success: Phone authentication successful");
-
-      // Dispatch the user ID to the Redux store
       setUserId(user.uid);
-
-      navigation.navigate("Main"); // Change "Main" to the appropriate screen name.
+      navigation.navigate("Main");
     } catch (error) {
       setInfo(`Error: ${error.message}`);
     }
   };
+
   const notRegistered = () => {
     navigation.navigate("RegisterbyPhoneNumber");
   };
+
+  useEffect(() => {
+    // Check if the userId is saved locally in AsyncStorage
+    AsyncStorage.getItem("userId").then((userId) => {
+      if (userId) {
+        setUserId(userId);
+        navigation.navigate("Main");
+      }
+    });
+  }, [setUserId, navigation]);
 
   return (
     <View style={styles.container}>
@@ -119,11 +126,7 @@ const LoginByPhoneNumber = ({ setUserId }) => {
             <Text style={styles.buttonText}>Send Verification Code</Text>
           </TouchableOpacity>
           <View
-            style={{
-              flexDirection: "row",
-              marginTop: 20,
-              alignSelf: "center",
-            }}
+            style={{ flexDirection: "row", marginTop: 20, alignSelf: "center" }}
           >
             <Text style={styles.registerText}> Not registered yet? </Text>
             <TouchableOpacity onPress={notRegistered}>
@@ -153,7 +156,6 @@ const LoginByPhoneNumber = ({ setUserId }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

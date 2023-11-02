@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from "react-native";
 import COLORS from "../../consts/colors";
-
+import { useNavigation } from "@react-navigation/native";
 const { width, height } = Dimensions.get("window");
 
 const slides = [
@@ -50,8 +50,9 @@ const Slide = ({ item }) => {
   );
 };
 
-const OnboardingScreen = ({ navigation }) => {
+const OnboardingScreen = () => {
   const [currentSlideIndex, setCurrentSlideIndex] = React.useState(0);
+  const navigation = useNavigation();
   const ref = React.useRef();
   const updateCurrentSlideIndex = (e) => {
     const contentOffsetX = e.nativeEvent.contentOffset.x;

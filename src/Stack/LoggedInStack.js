@@ -83,20 +83,46 @@ const MainTab = () => {
   );
 };
 
-const MainStack = () => {
+const LoggedInStack = ({ setUserId }) => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkUserLoggedIn();
+  }, []);
+  const checkUserLoggedIn = async () => {
+    try {
+      // Check if the user is logged in by retrieving the user ID from AsyncStorage.
+      const userId = await AsyncStorage.getItem("userId");
+      if (userId) {
+        // Dispatch the user ID to the Redux store if it exists.
+        setUserId(userId);
+      }
+    } catch (error) {
+      console.error("Error checking user login:", error);
+    } finally {
+      setLoading(false); // Set loading to false when the check is complete
+    }
+    if (loading) {
+      // You can return a loading indicator or a blank screen while checking the user login.
+      return <LoadingComponent />; // Replace LoadingComponent with your actual loading component.
+    }
+  };
   return (
     <Stack.Navigator
-      initialRouteName="Preload"
+      initialRouteName="Main"
       screenOptions={{ headerShown: false }}
     >
+      <Stack.Screen name="SignIn" component={SignIn} />
+
+      <Stack.Screen name="Main" component={MainTab} />
+
+      <Stack.Screen name="AboutYou" component={AboutYou} />
+
       <Stack.Screen
         name="Preload"
         component={Preload}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="SignIn" component={SignIn} />
-
-      <Stack.Screen name="AboutYou" component={AboutYou} />
       <Stack.Screen name="BusinessCategory" component={BusinessCategory} />
       <Stack.Screen name="Services" component={Services} />
       <Stack.Screen name="DayList" component={DayList} />
@@ -108,7 +134,6 @@ const MainStack = () => {
         name="ManageServiceProviders"
         component={ManageServiceProviders}
       />
-      <Stack.Screen name="Main" component={MainTab} />
 
       <Stack.Screen name="AddressForm" component={AddressForm} />
       <Stack.Screen name="displayaddress" component={DisplayAddress} />
@@ -126,4 +151,10 @@ const MainStack = () => {
   );
 };
 
-export default MainStack;
+const mapDispatchToProps = (dispatch) => {
+  return {
+    setUserId: (myuserid) => dispatch(setUserId(myuserid)), // Dispatch the action
+  };
+};
+
+export default connect(null, mapDispatchToProps)(LoggedInStack);
